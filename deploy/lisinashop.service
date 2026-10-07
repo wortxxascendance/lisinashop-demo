@@ -1,0 +1,25 @@
+# Автозапуск сервера магазина. Положите в /etc/systemd/system/lisinashop.service, затем:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now lisinashop
+# Логи: journalctl -u lisinashop -f
+[Unit]
+Description=LisinaShop (сайт и сервер заказов)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lisinashop
+WorkingDirectory=/var/www/lisinashop
+EnvironmentFile=/var/www/lisinashop/.env
+ExecStart=/usr/bin/node server/index.mjs
+Restart=always
+RestartSec=3
+# Ограничения: сервису нужна запись только в папку с базой заказов
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/www/lisinashop/server/data
+
+[Install]
+WantedBy=multi-user.target

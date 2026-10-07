@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+# Ссылки на платные материалы и база заказов не должны попадать в публичный репозиторий
+server/private/
+server/data/
+*.log

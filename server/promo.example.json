@@ -1,0 +1,4 @@
+{
+  "WELCOME10": { "type": "percent", "value": 10, "minRub": 0, "until": "2026-12-31" },
+  "MINUS300": { "type": "fixed", "value": 300, "minRub": 3000 }
+}

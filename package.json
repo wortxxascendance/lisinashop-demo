@@ -1,0 +1,23 @@
+{
+  "name": "lisinashop",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Витрина и сервер заказов LisinaShop (замена Tilda)",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "import:tilda": "node tools/import-tilda.mjs",
+    "build": "node tools/build.mjs",
+    "build:demo": "node tools/build.mjs --demo",
+    "dev": "node server/index.mjs",
+    "start": "node server/index.mjs",
+    "test": "node --test \"server/test/*.test.mjs\""
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^23.11.1",
+    "sharp": "^0.33.5"
+  }
+}

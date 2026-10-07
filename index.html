@@ -4,19 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LisinaShop</title>
-<meta name="robots" content="noindex, nofollow">
-<meta name="description" content="LisinaShop — профессиональная косметика для волос PILULYA, активы и БАДы для создания уходовой косметики, сборники рецептов.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Oranienbaum&display=swap">
-<link rel="stylesheet" href="assets/styles.css">
-<script>
-  (function (d) {
-    d.classList.add('js');
-    try { if (sessionStorage.getItem('ls_intro')) d.classList.add('no-intro'); } catch (e) {}
-    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('no-intro');
-  })(document.documentElement);
-</script>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#171214">
+<link rel="stylesheet" href="/assets/styles.css">
+<script src="/assets/site-config.js"></script>
+<script src="/assets/boot.js"></script>
 </head>
 <body>
 
@@ -42,21 +37,21 @@
 <header class="header" id="header">
   <div class="wrap header__in">
     <button class="icon-btn burger" type="button" data-action="open-menu" aria-label="Открыть меню"><svg class="i"><use href="#i-menu"/></svg></button>
-    <a class="logo" href="#home" aria-label="LisinaShop — на главную">
+    <a class="logo" href="/" aria-label="LisinaShop — на главную">
       <svg class="logo__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"/></svg>
       <span class="logo__word">Lisina<span>Shop</span></span>
     </a>
     <nav class="nav" aria-label="Основное меню">
-      <a href="#catalog-prof" data-nav="prof">Pilulya Prof</a>
-      <a href="#catalog-home" data-nav="home">Уход дома</a>
-      <a href="#catalog-badi" data-nav="badi">Бады и активы</a>
-      <a href="#catalog-rezept" data-nav="rezept">Сборники</a>
-      <a href="#catalog-sale" data-nav="sale" class="nav__sale">Акции</a>
+      <a href="/catalog/prof/" data-nav="prof">Pilulya Prof</a>
+      <a href="/catalog/home/" data-nav="home">Уход дома</a>
+      <a href="/catalog/badi/" data-nav="badi">Бады и активы</a>
+      <a href="/catalog/rezept/" data-nav="rezept">Сборники</a>
+      <a href="/catalog/sale/" data-nav="sale" class="nav__sale">Акции</a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i i--xs"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="header__tools">
       <button class="icon-btn" type="button" data-action="open-search" aria-label="Поиск"><svg class="i"><use href="#i-search"/></svg></button>
-      <a class="icon-btn hide-xs" href="#favorites" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
+      <a class="icon-btn hide-xs" href="/favorites/" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
       <button class="icon-btn cart-btn" type="button" data-action="open-cart" aria-label="Корзина"><svg class="i"><use href="#i-bag"/></svg><span class="cart-btn__sum" data-cart-sum></span><span class="badge" data-cart-count hidden>0</span></button>
     </div>
   </div>
@@ -68,7 +63,7 @@
   <div class="wrap">
     <div class="footer__top">
       <div class="footer__brand">
-        <a class="logo logo--light" href="#home">
+        <a class="logo logo--light" href="/">
           <svg class="logo__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"/></svg>
           <span class="logo__word">Lisina<span>Shop</span></span>
         </a>
@@ -80,17 +75,17 @@
       </div>
       <div class="footer__col">
         <h3>Каталог</h3>
-        <a href="#catalog-prof">Pilulya Prof</a>
-        <a href="#catalog-home">Уход дома</a>
-        <a href="#catalog-badi">Бады и активы</a>
-        <a href="#catalog-rezept">Сборники и протоколы</a>
-        <a href="#catalog-sale">Акции</a>
+        <a href="/catalog/prof/">Pilulya Prof</a>
+        <a href="/catalog/home/">Уход дома</a>
+        <a href="/catalog/badi/">Бады и активы</a>
+        <a href="/catalog/rezept/">Сборники и протоколы</a>
+        <a href="/catalog/sale/">Акции</a>
       </div>
       <div class="footer__col">
         <h3>Покупателям</h3>
-        <a href="#delivery">Доставка и оплата</a>
-        <a href="#delivery">Гарантия и возврат</a>
-        <a href="#favorites">Избранное</a>
+        <a href="/delivery/">Доставка и оплата</a>
+        <a href="/garant/">Гарантия и возврат</a>
+        <a href="/favorites/">Избранное</a>
         <button type="button" class="linklike" data-action="open-quiz">Подбор ухода</button>
         <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение</a>
       </div>
@@ -103,7 +98,7 @@
     </div>
     <div class="footer__bottom">
       <span>© 2026 ООО «ЛИСИНА» · ИНН 3460085337 · ОГРН 1233400011833</span>
-      <span class="footer__legal"><a href="#delivery">Договор оферты</a><a href="#delivery">Политика конфиденциальности</a><a href="#delivery">Обработка персональных данных</a></span>
+      <span class="footer__legal"><a href="/oferta/">Договор оферты</a><a href="/politika-konfidenczialnosti/">Политика конфиденциальности</a><a href="/politika/">Обработка персональных данных</a></span>
     </div>
   </div>
 </footer>
@@ -113,17 +108,17 @@
   <div class="sheet__backdrop" data-action="close"></div>
   <aside class="sheet__panel" role="dialog" aria-modal="true" aria-label="Меню" data-lenis-prevent>
     <div class="sheet__head">
-      <a class="logo" href="#home" data-action="close"><svg class="logo__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"/></svg><span class="logo__word">Lisina<span>Shop</span></span></a>
+      <a class="logo" href="/" data-action="close"><svg class="logo__mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"/></svg><span class="logo__word">Lisina<span>Shop</span></span></a>
       <button class="icon-btn" type="button" data-action="close" aria-label="Закрыть"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <nav class="menu-list">
-      <a href="#catalog-prof" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#catalog-home" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#catalog-badi" data-action="close">Бады и активы <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#catalog-rezept" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#catalog-sale" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#favorites" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="#delivery" data-action="close">Доставка и оплата <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/catalog/prof/" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/catalog/home/" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/catalog/badi/" data-action="close">Бады и активы <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/catalog/rezept/" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/catalog/sale/" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/favorites/" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/delivery/" data-action="close">Доставка и оплата <svg class="i"><use href="#i-chevron"/></svg></a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="menu-foot">
@@ -212,8 +207,9 @@
   </defs>
 </svg>
 
-<script src="assets/vendor/lenis.min.js"></script>
-<script src="data/products.js"></script>
-<script src="assets/app.js"></script>
+<script src="/assets/vendor/lenis.min.js"></script>
+<script src="/data/products.js"></script>
+<script src="/data/pages.js"></script>
+<script src="/assets/app.js"></script>
 </body>
 </html>

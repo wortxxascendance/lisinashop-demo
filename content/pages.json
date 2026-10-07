@@ -1,0 +1,31 @@
+{
+  "delivery": {
+    "file": "delivery.html",
+    "title": "Доставка и оплата",
+    "description": "Доставка СДЭК по России, график отправки заказов, самовывоз в Волгограде и способы оплаты в интернет-магазине LisinaShop."
+  },
+  "oferta": {
+    "file": "oferta.html",
+    "title": "Договор оферты",
+    "description": "Публичная оферта ООО «ЛИСИНА» о продаже товаров дистанционным способом через интернет-магазин LisinaShop."
+  },
+  "politika-konfidenczialnosti": {
+    "file": "politika-konfidenczialnosti.html",
+    "title": "Политика конфиденциальности",
+    "description": "Политика конфиденциальности интернет-магазина LisinaShop."
+  },
+  "politika": {
+    "file": "politika.html",
+    "title": "Обработка персональных данных",
+    "description": "Политика ООО «ЛИСИНА» в отношении обработки персональных данных."
+  },
+  "garant": {
+    "file": "garant.html",
+    "title": "Гарантия и возврат",
+    "description": "Условия возврата и обмена товаров, срок возврата денежных средств в интернет-магазине LisinaShop."
+  },
+  "contacts": {
+    "title": "Контакты",
+    "description": "Телефон, почта, Telegram и реквизиты ООО «ЛИСИНА», интернет-магазин LisinaShop."
+  }
+}
