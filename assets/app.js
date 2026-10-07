@@ -18,14 +18,19 @@
   var API = typeof window.LS_API === 'string' ? window.LS_API : '/api';
   var DEMO = !API;
   var PRERENDER = !!window.LS_PRERENDER;
+  /* Режим «внутри страницы Tilda»: адреса через #/, картинки с внешнего адреса, оформление в корзине Tilda */
+  var TILDA = window.LS_MODE === 'tilda';
+  var HASH = window.LS_ROUTING === 'hash';
+  var ASSET_BASE = window.LS_ASSET_BASE || BASE;
 
-  function asset(p) { return /^(https?:|\/|data:)/.test(p) ? p : BASE + p; }
+  function asset(p) { return /^(https?:|\/|data:)/.test(p) ? p : ASSET_BASE + p; }
+  function link(path) { return HASH ? '#/' + path : BASE + path; }
   var U = {
-    home: function () { return BASE; },
-    catalog: function (cat) { return BASE + 'catalog/' + (cat && cat !== 'all' ? cat + '/' : ''); },
-    product: function (id) { var p = byId[id]; return BASE + 'product/' + (p ? p.slug : id) + '/'; },
-    page: function (slug) { return BASE + slug + '/'; },
-    order: function (id) { return BASE + 'order/' + id + '/'; }
+    home: function () { return link(''); },
+    catalog: function (cat) { return link('catalog/' + (cat && cat !== 'all' ? cat + '/' : '')); },
+    product: function (id) { var p = byId[id]; return link('product/' + (p ? p.slug : id) + '/'); },
+    page: function (slug) { return link(slug + '/'); },
+    order: function (id) { return link('order/' + id + '/'); }
   };
 
   var CATS = {
@@ -145,9 +150,9 @@
   /* ---------- Значки в шапке ---------- */
   function bump(el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
   function updateBadges(bumpCart, bumpFav) {
-    var c = cartCount();
+    var c = cartCount() || (TILDA ? tildaCount() : 0);
     $all('[data-cart-count]').forEach(function (b) { b.textContent = c; b.hidden = !c; if (bumpCart) bump(b); });
-    $all('[data-cart-sum]').forEach(function (b) { b.textContent = c ? money(cartTotal()) : ''; });
+    $all('[data-cart-sum]').forEach(function (b) { b.textContent = cartCount() ? money(cartTotal()) : ''; });
     $all('[data-fav-count]').forEach(function (b) { b.textContent = favs.length; b.hidden = !favs.length; if (bumpFav) bump(b); });
   }
 
@@ -201,9 +206,18 @@
   /* ---------- Роутинг ---------- */
   var PAGE_SLUGS = ['delivery', 'oferta', 'politika', 'politika-konfidenczialnosti', 'garant', 'contacts'];
 
+  var lastHashRel = '';
   function route() {
-    var rel = location.pathname;
-    if (rel.indexOf(BASE) === 0) rel = rel.slice(BASE.length);
+    var rel;
+    if (HASH) {
+      var h = location.hash;
+      if (!h || h === '#' || h === '#/') lastHashRel = '';
+      else if (h.indexOf('#/') === 0) lastHashRel = decodeURIComponent(h.slice(2));
+      rel = lastHashRel; // чужие якоря Tilda (#order, #rec…) страницу не меняют
+    } else {
+      rel = location.pathname;
+      if (rel.indexOf(BASE) === 0) rel = rel.slice(BASE.length);
+    }
     rel = rel.replace(/index\.html$/, '').replace(/^\/+|\/+$/g, '');
     if (!rel) return { name: 'home' };
     var parts = rel.split('/');
@@ -258,6 +272,7 @@
   }
   function setMeta(m) {
     document.title = m.title;
+    if (TILDA) return; // на странице Tilda описание, canonical и запрет индексации задаёт сама Tilda
     var url = SITE ? SITE + location.pathname : '';
     setTag('meta[name="description"]', 'meta', { name: 'description', content: m.description });
     if (url) setTag('link[rel="canonical"]', 'link', { rel: 'canonical', href: url });
@@ -433,12 +448,14 @@
       '<div class="collab__img">' + imgTag('assets/img/pool.webp', 'Косметика PILULYA у бассейна') + '</div>' +
       '<div class="collab__text"><p class="eyebrow">Для блогеров</p><h2 class="h2">Дарим косметику PILULYA за&nbsp;честный отзыв</h2>' +
         '<p class="lead">Ведёте Telegram-канал или блог ВКонтакте от 500 подписчиков? Оставьте заявку, мы пришлём косметику и обсудим детали.</p>' +
-        '<form class="form" data-form="collab" novalidate>' +
-          '<div class="form__row"><div class="field"><label for="c-name">Имя</label><input class="input input--dark" id="c-name" name="name" placeholder="Как к вам обращаться" required></div>' +
-          '<div class="field"><label for="c-link">Ссылка на канал или блог</label><input class="input input--dark" id="c-link" name="link" placeholder="t.me/… или vk.com/…" required></div></div>' +
-          '<label class="check"><input type="checkbox" id="c-agree" required checked> Даю согласие на обработку персональных данных</label>' +
-          '<button class="btn btn--rose" type="submit">Отправить заявку</button>' +
-        '</form></div>' +
+        (TILDA
+          ? '<div><a class="btn btn--rose" href="https://t.me/piiilulya" target="_blank" rel="noopener">Оставить заявку в Telegram ' + icon('i-send') + '</a></div>'
+          : '<form class="form" data-form="collab" novalidate>' +
+            '<div class="form__row"><div class="field"><label for="c-name">Имя</label><input class="input input--dark" id="c-name" name="name" placeholder="Как к вам обращаться" required></div>' +
+            '<div class="field"><label for="c-link">Ссылка на канал или блог</label><input class="input input--dark" id="c-link" name="link" placeholder="t.me/… или vk.com/…" required></div></div>' +
+            '<label class="check"><input type="checkbox" id="c-agree" required> Даю согласие на обработку персональных данных</label>' +
+            '<button class="btn btn--rose" type="submit">Отправить заявку</button>' +
+          '</form>') + '</div>' +
       '</div></div></section>';
 
     var support = '<section class="section section--tight"><div class="wrap">' +
@@ -632,7 +649,9 @@
         return '<div class="upsell">' + imgTag(img(p, 0), '') + '<div><div style="font-weight:500;line-height:1.3">' + esc(p.title) + '</div><span class="muted">' + money(minPrice(p)) + '</span></div><button type="button" class="add" data-action="add" data-id="' + p.id + '" aria-label="Добавить: ' + esc(p.title) + '">' + icon('i-plus') + '</button></div>';
       }).join('') + '</div></div>' : '') +
       '<div class="cart__foot"><div class="cart__total"><span>Итого</span><b>' + money(total) + '</b></div>' +
-      '<a class="btn btn--block" href="' + U.page('checkout') + '" data-action="close">Оформить заказ ' + icon('i-arrow') + '</a>' +
+      (TILDA
+        ? '<button type="button" class="btn btn--block" data-action="tilda-checkout">Оформить заказ ' + icon('i-arrow') + '</button>'
+        : '<a class="btn btn--block" href="' + U.page('checkout') + '" data-action="close">Оформить заказ ' + icon('i-arrow') + '</a>') +
       '<button type="button" class="btn btn--ghost btn--block btn--sm" data-action="close">Продолжить покупки</button></div>';
   }
 
@@ -683,7 +702,50 @@
     return checkoutHead() + '<div class="wrap"><div class="empty" style="padding-block:72px">' + (icn || fox()) + '<h2 class="h3">' + title + '</h2><p>' + text + '</p>' + (extra || '') + '</div></div>';
   }
 
+  /* ---------- Оформление через корзину Tilda (режим TILDA) ---------- */
+  function tildaCart() { return window.tcart && Array.isArray(window.tcart.products) ? window.tcart : null; }
+  function tildaCount() {
+    var t = tildaCart();
+    return t ? t.products.reduce(function (s, p) { return s + (Number(p.quantity) || 1); }, 0) : 0;
+  }
+  function openTildaCart() {
+    if (typeof window.tcart__openCartFullscreen === 'function') return window.tcart__openCartFullscreen();
+    if (typeof window.tcart__openCart === 'function') return window.tcart__openCart();
+    var icon = document.querySelector('.t706__carticon');
+    if (icon) icon.click();
+  }
+  /* Переносит товары из нашей корзины в корзину Tilda: там доставка СДЭК, оплата ЮKassa и заказ в Telegram */
+  function tildaCheckout() {
+    var add = window.tcart__addProduct || window.tcartaddProduct;
+    if (!add || !tildaCart()) {
+      toast('На странице нет корзины Tilda: добавьте блок корзины', 'i-x');
+      return;
+    }
+    if (!cart.length) { if (tildaCount()) openTildaCart(); return; }
+    try {
+      window.tcart.products = [];
+      if (typeof window.tcart__saveLocalObj === 'function') window.tcart__saveLocalObj();
+      cart.forEach(function (l) {
+        var p = byId[l.id];
+        var v = p.opts ? p.opts.values[l.opt] : null;
+        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: l.qty, uid: Number(p.id), img: absUrl(img(p, 0)) };
+        var sku = (v && v.sku) || p.sku;
+        if (sku) prod.sku = sku;
+        if (v) prod.options = [{ option: p.opts.title, variant: String(v.label) }];
+        add(prod);
+      });
+      cart = [];
+      save('ls_cart', cart);
+      closeAll(true);
+      updateBadges();
+      setTimeout(openTildaCart, 400);
+    } catch (e) {
+      toast('Не удалось открыть оформление. Обновите страницу', 'i-x');
+    }
+  }
+
   function checkoutView() {
+    if (TILDA) return checkoutMessage('', 'Оформление в корзине магазина', 'Там выбираются доставка СДЭК и оплата. Товары из вашей корзины перенесутся туда автоматически.', '<button type="button" class="btn" data-action="tilda-checkout">Перейти к оформлению ' + icon('i-arrow') + '</button>');
     if (shop.state === 'loading') return checkoutMessage('', 'Загружаем оформление…', 'Это займёт секунду.');
     if (shop.state === 'error') return checkoutMessage('', 'Оформление временно недоступно', 'Не получилось связаться с сервером. Обновите страницу или напишите нам в Telegram ' + TG_SUPPORT + ', оформим заказ вручную.', '<a class="btn" href="' + U.page('checkout') + '">Обновить страницу</a>');
     if (!cart.length) return checkoutMessage('', 'Корзина пуста', 'Добавьте товары, чтобы оформить заказ.', '<a class="btn" href="' + U.catalog() + '">Перейти в каталог</a>');
@@ -1283,7 +1345,7 @@
 
   /* Плавный скролл */
   function initLenis() {
-    if (!window.Lenis || REDUCED) return;
+    if (!window.Lenis || REDUCED || TILDA) return; // внутри Tilda плавный скролл мешал бы её окнам (корзина, попапы)
     try {
       lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true });
       var raf = function (t) { lenis.raf(t); requestAnimationFrame(raf); };
@@ -1351,8 +1413,10 @@
       case 'del': setQty(key, 0); break;
       case 'fav': e.preventDefault(); toggleFav(el.getAttribute('data-fav')); break;
       case 'go-favs': $('#toast').hidden = true; navigate(U.page('favorites')); break;
+      case 'tilda-checkout': tildaCheckout(); break;
       case 'open-cart': {
         $('#toast').hidden = true;
+        if (TILDA && !cart.length && tildaCount()) { openTildaCart(); break; }
         renderCart();
         var cartEl = $('#cart');
         cartEl.classList.add('is-opening');
@@ -1526,12 +1590,33 @@
     }, 200);
   }
   function navigate(url) {
+    if (HASH) {
+      var target = url.charAt(0) === '#' ? url : '#/' + url.replace(/^\/+/, '');
+      if (target === location.hash || (target === '#/' && !location.hash)) { scrollTop(); return; }
+      location.hash = target.slice(1); // дальше сработает hashchange
+      return;
+    }
     var u = new URL(url, location.href);
     if (u.pathname === location.pathname && u.search === location.search) { scrollTop(); return; }
     history.pushState(null, '', u.pathname + u.search);
     transitionTo();
   }
-  window.addEventListener('popstate', transitionTo);
+  if (HASH) {
+    window.addEventListener('hashchange', function () {
+      var h = location.hash;
+      if (!h || h === '#' || h.indexOf('#/') === 0) transitionTo();
+    });
+    // свои ссылки #/… обрабатываем раньше скриптов Tilda: у неё свои обработчики якорей
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href^="#/"]');
+      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(a.getAttribute('href'));
+    }, true);
+  } else {
+    window.addEventListener('popstate', transitionTo);
+  }
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target.closest && e.target.closest('a[href]');
@@ -1551,5 +1636,6 @@
   render(true);
   updateBadges();
   boot();
+  if (TILDA) setInterval(function () { updateBadges(); }, 2000); // корзина Tilda меняется своими кнопками
   window.__lsRendered = true; // сигнал для tools/build.mjs: страница отрисована, можно сохранять HTML
 })();

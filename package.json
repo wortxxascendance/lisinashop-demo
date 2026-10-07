@@ -8,7 +8,7 @@
   "scripts": {
     "import:tilda": "node tools/import-tilda.mjs",
     "build": "node tools/build.mjs",
-    "build:demo": "node tools/build.mjs --demo",
+    "build:demo": "node tools/build.mjs --demo && node tools/build-tilda.mjs",
     "dev": "node server/index.mjs",
     "start": "node server/index.mjs",
     "test": "node --test \"server/test/*.test.mjs\""
