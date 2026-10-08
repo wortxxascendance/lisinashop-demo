@@ -1,6 +1,10 @@
 /* LisinaShop — витрина в эстетике PILULYA: молочный фон, пудрово-розовый акцент, чёрный как у флаконов.
    Раскладка: широкие редакционные блоки с аркой-кадром в hero, фарфоровые плитки товаров, тёмные «премиальные» паузы. */
+@font-face { font-family: "Bebas Neue"; src: url("fonts/bebas-neue.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+
 :root {
+  --fox: #f05692;
+  --f-brand: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
   --milk: #fbf7f5;
   --porcelain: #f1eae7;
   --blush: #f7e4e9;
@@ -136,11 +140,11 @@ p { margin: 0; }
 .header.is-scrolled { border-color: var(--line); box-shadow: 0 6px 24px -18px rgba(23, 18, 20, .4); }
 .header__in { display: flex; align-items: center; gap: 24px; height: var(--header-h); }
 .logo { display: inline-flex; align-items: center; gap: 10px; flex: none; }
-.logo__mark { width: 34px; height: 34px; color: var(--ink); transition: color .3s, transform .5s var(--ease); }
-.logo:hover .logo__mark { color: var(--rose-deep); transform: rotate(-6deg); }
+.logo__mark { width: 38px; height: 38px; color: var(--fox); transition: color .3s, transform .5s var(--ease); }
+.logo:hover .logo__mark { color: var(--rose-deep); transform: rotate(-4deg) scale(1.04); }
 .logo__word { font-family: var(--f-display); font-size: 27px; letter-spacing: .01em; line-height: 1; }
 .logo__word span { color: var(--rose-deep); }
-.logo--light .logo__mark, .logo--light .logo__word { color: var(--white); }
+.logo--light .logo__word { color: var(--white); }
 .logo--light .logo__word span { color: var(--rose); }
 
 .nav { display: flex; gap: 2px; margin-inline: auto; }
@@ -683,7 +687,7 @@ textarea.input { padding: 14px 18px; min-height: 96px; resize: vertical; }
   .hide-sm { display: none !important; }
   .topbar__in { justify-content: center; }
   .logo__word { font-size: 23px; }
-  .logo__mark { width: 30px; height: 30px; }
+  .logo__mark { width: 33px; height: 33px; }
   .grid, .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
   .rail { grid-auto-columns: 64%; gap: 12px; }
   .reviews .rail { grid-auto-columns: 86%; }
@@ -740,17 +744,13 @@ html.lenis, html.lenis body { height: auto; }
 .intro.is-done { animation: introOut .95s var(--ease-io) forwards; }
 .no-intro .intro { display: none; }
 .intro__in { display: grid; justify-items: center; gap: 20px; }
-.intro__fox { width: 88px; height: 88px; color: var(--rose); }
-.intro__fox path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.2s var(--ease-out) forwards; }
-.intro__fox path:nth-child(2) { animation-delay: .18s; }
-.intro__fox path:nth-child(3) { animation-delay: .3s; }
-.intro__fox path:nth-child(4) { animation-delay: .42s; }
+.intro__fox { width: 96px; height: 96px; color: var(--fox); clip-path: inset(100% 0 0 0); animation: foxReveal 1.3s var(--ease-io) .15s forwards; }
 .intro__word { overflow: hidden; font-family: var(--f-display); font-size: clamp(38px, 5vw, 58px); line-height: 1.1; padding-bottom: .05em; }
 .intro__word span { display: block; transform: translateY(110%); animation: rise 1s var(--ease-out) .5s forwards; }
 .intro__word em { font-style: normal; color: var(--rose); }
 .intro__line { width: 180px; height: 1px; background: rgba(255, 255, 255, .14); overflow: hidden; }
 .intro__line i { display: block; height: 100%; background: var(--rose); transform: scaleX(0); transform-origin: left; animation: grow 1.3s var(--ease-io) .3s forwards; }
-@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes foxReveal { to { clip-path: inset(0 0 0 0); } }
 @keyframes rise { to { transform: none; } }
 @keyframes grow { to { transform: scaleX(1); } }
 @keyframes introOut { to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
@@ -888,6 +888,7 @@ html.lenis, html.lenis body { height: auto; }
 .point b { display: block; font-weight: 600; font-size: 14px; line-height: 1.35; }
 .point small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); line-height: 1.4; }
 .spinner { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--blush); border-top-color: var(--rose-deep); animation: spin .9s linear infinite; }
+.brand { font-family: var(--f-brand); font-style: normal; font-weight: 400; letter-spacing: .03em; font-size: 1.14em; line-height: .9; color: var(--rose-deep); }
 .legal { max-width: 860px; }
 .legal h2 { font-family: var(--f-display); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.15; margin: 32px 0 10px; color: var(--ink); }
 .legal p { margin: 10px 0; }

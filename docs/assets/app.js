@@ -400,7 +400,7 @@
     }
 
     var promos = '<section class="section"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <em>PILULYA</em></h2></div><a class="link-arrow" href="' + U.catalog('sale') + '">Все акции и новинки ' + icon('i-arrow') + '</a></div>' +
+      '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div><a class="link-arrow" href="' + U.catalog('sale') + '">Все акции и новинки ' + icon('i-arrow') + '</a></div>' +
       '<div class="promos">' +
         (set1 ? promo(set1, '', 'Маска + шампунь, филлер в подарок', 'Купите шампунь и маску серии PROFESSIONAL и получите филлер Molecular Lipid в подарок.', 'assets/img/hero-wide.webp') : '') +
         (set2 ? promo(set2, 'promo--alt', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.', 'assets/img/color-additives.webp') : '') +
