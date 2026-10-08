@@ -17,9 +17,10 @@ const DOCS = join(ROOT, 'docs');
 
 const ver = async (rel) => createHash('sha1').update(await readFile(join(DOCS, rel))).digest('hex').slice(0, 8);
 
-// Стили поверх Tilda: прячем её шапку, подвал и значок корзины, перекрашиваем окно корзины под фирменный стиль
+// Стили поверх Tilda: прячем блоки её шапки и подвала (кроме корзины: на lisinashop.ru корзина ST100 стоит в общей шапке),
+// значок корзины Tilda и перекрашиваем окно корзины под фирменный стиль
 const TILDA_CSS = `
-#t-header, #t-footer { display: none !important; }
+#t-header .t-rec:not([data-record-type="706"]), #t-footer .t-rec:not([data-record-type="706"]) { display: none !important; }
 .t706__carticon { display: none !important; }
 .t706__cartpage, .t706__cartwin, .t706__sidebar { font-family: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important; color: #171214; }
 .t706__cartpage-heading, .t706__cartwin-heading, .t706__sidebar-heading { font-family: "Oranienbaum", "Times New Roman", serif !important; font-weight: 400 !important; }
