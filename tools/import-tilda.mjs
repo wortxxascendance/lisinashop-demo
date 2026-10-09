@@ -88,12 +88,15 @@ async function main() {
   const withImages = process.argv.includes('--images');
   const byId = new Map();
   const images = new Map();
+  const parts = {}; // группа Tilda -> товары в том порядке, в каком они стоят на странице магазина
   let order = 0;
 
   for (const [part, cat, sub] of PARTS) {
     const json = await getPart(part);
+    parts[part] = [];
     for (const x of json.products ?? []) {
       const id = String(x.uid);
+      if (!parts[part].includes(id)) parts[part].push(id);
       if (byId.has(id)) {
         const p = byId.get(id);
         if (!p.in.some((e) => e[0] === cat && e[1] === sub)) p.in.push([cat, sub]);
@@ -154,8 +157,10 @@ async function main() {
   await writeFile(join(ROOT, 'data/products.json'), JSON.stringify(list));
   await writeFile(
     join(ROOT, 'data/products.js'),
-    '/* Каталог LisinaShop. Создан tools/import-tilda.mjs, вручную не править */\nwindow.LS_PRODUCTS = ' + JSON.stringify(list) + ';\n'
+    '/* Каталог LisinaShop. Создан tools/import-tilda.mjs, вручную не править */\nwindow.LS_PRODUCTS = ' + JSON.stringify(list) + ';\n' +
+      'window.LS_PARTS = ' + JSON.stringify(parts) + ';\n'
   );
+  await writeFile(join(ROOT, 'data/parts.json'), JSON.stringify(parts));
   console.log(`Товаров: ${list.length}, фото: ${images.size}`);
 
   if (withImages) {

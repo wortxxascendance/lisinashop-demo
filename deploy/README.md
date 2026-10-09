@@ -23,7 +23,6 @@ sudo -u lisinashop npm ci --omit=dev
 # 3. Сайт собирается на вашем компьютере (нужен Chrome) и загружается готовым:
 #    у себя:   npm run build
 #    на сервер: rsync -a dist/ user@server:/var/www/lisinashop/dist/
-#               rsync -a deploy/redirects.generated.conf user@server:/var/www/lisinashop/deploy/
 
 # 4. Настройки: заполните .env по образцу .env.example и закройте доступ
 sudo -u lisinashop cp .env.example .env && sudo -u lisinashop nano .env && sudo chmod 600 .env
@@ -74,7 +73,7 @@ sudo certbot --nginx -d lisinashop.ru -d www.lisinashop.ru
 4. **Не трогайте** `MX`, SPF, DKIM и `mailru-domain`: иначе перестанет работать почта `info@lisinashop.ru`, а письма магазина будут попадать в спам.
 5. Выпустите сертификат (`certbot`), включите HTTPS и `Strict-Transport-Security`.
 6. Переключите адрес HTTP-уведомлений в ЮKassa на `https://lisinashop.ru/api/yookassa/webhook` и сделайте реальный платёж на минимальную сумму.
-7. Проверьте старые адреса: `/pilulya_prof`, `/badi`, `/payment` и страницы товаров должны давать редирект 301 на новые.
+7. Проверьте старые адреса: `/pilulya_prof`, `/badi`, `/payment` и окна товаров вида `/badi/tproduct/…` открываются сразу, без редиректов: адреса те же, что были на Tilda.
 8. Отправьте `https://lisinashop.ru/sitemap.xml` в Яндекс Вебмастер и Google Search Console. Верните Яндекс Метрику (код нужно добавить в сборку).
 9. Tilda не отключайте 2-4 недели: это запасной вариант.
 

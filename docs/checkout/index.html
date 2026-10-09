@@ -10,18 +10,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Oranienbaum&display=swap">
 <link rel="icon" href="/lisinashop-demo/assets/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#171214">
-<link rel="stylesheet" href="/lisinashop-demo/assets/styles.css?v=3fa07c1a">
+<link rel="stylesheet" href="/lisinashop-demo/assets/styles.css?v=741468f0">
 <script src="/lisinashop-demo/assets/site-config.js?v=93db522c"></script>
 <script src="/lisinashop-demo/assets/boot.js?v=e545a63f"></script>
 <meta name="description" content="Интернет-магазин LisinaShop: косметика PILULYA для волос, активы и БАДы для создания уходовой косметики, сборники рецептов. Бесплатная доставка СДЭК от 4 500 ₽.">
-<link rel="canonical" href="https://wortxxascendance.github.io/lisinashop-demo/checkout/">
+<link rel="canonical" href="https://wortxxascendance.github.io/lisinashop-demo/checkout">
 <meta property="og:title" content="Оформление заказа — LisinaShop">
 <meta property="og:description" content="Интернет-магазин LisinaShop: косметика PILULYA для волос, активы и БАДы для создания уходовой косметики, сборники рецептов. Бесплатная доставка СДЭК от 4 500 ₽.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LisinaShop">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:image" content="https://wortxxascendance.github.io/lisinashop-demo/assets/img/hero-wide.webp">
-<meta property="og:url" content="https://wortxxascendance.github.io/lisinashop-demo/checkout/">
+<meta property="og:url" content="https://wortxxascendance.github.io/lisinashop-demo/checkout">
 <meta name="robots" content="noindex,nofollow" data-dyn="robots">
 </head>
 <body>
@@ -53,22 +53,45 @@
       <span class="logo__word">Lisina<span>Shop</span></span>
     </a>
     <nav class="nav" aria-label="Основное меню">
-      <a href="/lisinashop-demo/catalog/prof/" data-nav="prof">Pilulya Prof</a>
-      <a href="/lisinashop-demo/catalog/home/" data-nav="home">Уход дома</a>
-      <a href="/lisinashop-demo/catalog/badi/" data-nav="badi">Бады и активы</a>
-      <a href="/lisinashop-demo/catalog/rezept/" data-nav="rezept">Сборники</a>
-      <a href="/lisinashop-demo/catalog/sale/" data-nav="sale" class="nav__sale">Акции</a>
+      <a href="/lisinashop-demo/pilulya_prof" data-nav="pilulya_prof">Pilulya Prof</a>
+      <a href="/lisinashop-demo/pilulya" data-nav="pilulya">Уход дома</a>
+      <a href="/lisinashop-demo/badi" data-nav="badi">Бады</a>
+      <a href="/lisinashop-demo/akzia" data-nav="akzia" class="nav__sale">Акции</a>
+      <a href="/lisinashop-demo/rezept" data-nav="rezept">Сборники</a>
+      <a href="/lisinashop-demo/payment" data-nav="payment">Доставка</a>
+      <a href="/lisinashop-demo/contakt" data-nav="contakt">Контакты</a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i i--xs"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="header__tools">
       <button class="icon-btn" type="button" data-action="open-search" aria-label="Поиск"><svg class="i"><use href="#i-search"/></svg></button>
-      <a class="icon-btn hide-xs" href="/lisinashop-demo/favorites/" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
+      <a class="icon-btn hide-xs" href="/lisinashop-demo/favorites" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
       <button class="icon-btn cart-btn" type="button" data-action="open-cart" aria-label="Корзина"><svg class="i"><use href="#i-bag"/></svg><span class="cart-btn__sum" data-cart-sum></span><span class="badge" data-cart-count hidden>0</span></button>
     </div>
   </div>
 </header>
 
-<main id="app" tabindex="-1"><section class="page-head"><div class="wrap"><nav class="crumbs" aria-label="Навигация"><a href="/lisinashop-demo/">Главная</a><svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg><span>Оформление заказа</span></nav><h1 class="h2">Оформление заказа</h1></div></section><div class="wrap"><div class="empty" style="padding-block:72px"><svg class="fox" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"></use></svg><h2 class="h3">Корзина пуста</h2><p>Добавьте товары, чтобы оформить заказ.</p><a class="btn" href="/lisinashop-demo/catalog/">Перейти в каталог</a></div></div></main>
+<main id="app" tabindex="-1"><section class="page-head"><div class="wrap"><nav class="crumbs" aria-label="Навигация"><a href="/lisinashop-demo/">Главная</a><svg class="i" aria-hidden="true"><use href="#i-chevron"></use></svg><span>Оформление заказа</span></nav><h1 class="h2">Оформление заказа</h1></div></section><div class="wrap"><div class="empty" style="padding-block:72px"><svg class="fox" viewBox="0 0 64 64" aria-hidden="true"><use href="#fox"></use></svg><h2 class="h3">Корзина пуста</h2><p>Добавьте товары, чтобы оформить заказ.</p><a class="btn" href="/lisinashop-demo/pilulya_prof">Перейти в каталог</a></div></div></main>
+
+<!-- Окно товара: открывается поверх страницы раздела, как на старом сайте -->
+<div class="pmodal" id="pmodal" hidden="" data-lenis-prevent="">
+  <div class="pmodal__backdrop" data-action="close-product"></div>
+  <div class="pmodal__panel" role="dialog" aria-modal="true" aria-label="Карточка товара">
+    <button class="icon-btn pmodal__close" type="button" data-action="close-product" aria-label="Закрыть"><svg class="i"><use href="#i-x"></use></svg></button>
+    <div data-product-body=""></div>
+  </div>
+</div>
+<!-- /pmodal -->
+
+<!-- Связаться с нами -->
+<div class="fab" id="fab">
+  <div class="fab__menu" id="fab-menu" hidden>
+    <a href="tel:+79275103030"><span class="fab__ic"><svg class="i"><use href="#i-phone"/></svg></span>Телефон</a>
+    <a href="https://t.me/lisinashopGroop" target="_blank" rel="noopener"><span class="fab__ic"><svg class="i"><use href="#i-send"/></svg></span>Телеграм-канал</a>
+    <a href="https://t.me/piiilulya" target="_blank" rel="noopener"><span class="fab__ic"><svg class="i"><use href="#i-chat"/></svg></span>Техподдержка ТГ</a>
+    <button type="button" data-action="max"><span class="fab__ic fab__ic--max" aria-hidden="true">M</span>Max</button>
+  </div>
+  <button class="fab__btn" type="button" data-action="fab" aria-expanded="false" aria-controls="fab-menu" aria-label="Связаться с нами"><svg class="i"><use href="#i-chat"/></svg><svg class="i fab__x"><use href="#i-x"/></svg></button>
+</div>
 
 <footer class="footer" id="contacts">
   <div class="wrap">
@@ -86,17 +109,18 @@
       </div>
       <div class="footer__col">
         <h3>Каталог</h3>
-        <a href="/lisinashop-demo/catalog/prof/">Pilulya Prof</a>
-        <a href="/lisinashop-demo/catalog/home/">Уход дома</a>
-        <a href="/lisinashop-demo/catalog/badi/">Бады и активы</a>
-        <a href="/lisinashop-demo/catalog/rezept/">Сборники и протоколы</a>
-        <a href="/lisinashop-demo/catalog/sale/">Акции</a>
+        <a href="/lisinashop-demo/pilulya_prof">Pilulya Prof</a>
+        <a href="/lisinashop-demo/pilulya">Уход дома</a>
+        <a href="/lisinashop-demo/badi">Бады</a>
+        <a href="/lisinashop-demo/rezept">Сборники и протоколы</a>
+        <a href="/lisinashop-demo/akzia">Акции</a>
       </div>
       <div class="footer__col">
         <h3>Покупателям</h3>
-        <a href="/lisinashop-demo/delivery/">Доставка и оплата</a>
-        <a href="/lisinashop-demo/garant/">Гарантия и возврат</a>
-        <a href="/lisinashop-demo/favorites/">Избранное</a>
+        <a href="/lisinashop-demo/payment">Доставка и оплата</a>
+        <a href="/lisinashop-demo/garant">Гарантия и возврат</a>
+        <a href="/lisinashop-demo/contakt">Контакты</a>
+        <a href="/lisinashop-demo/favorites">Избранное</a>
         <button type="button" class="linklike" data-action="open-quiz">Подбор ухода</button>
         <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение</a>
       </div>
@@ -109,7 +133,7 @@
     </div>
     <div class="footer__bottom">
       <span>© 2026 ООО «ЛИСИНА» · ИНН 3460085337 · ОГРН 1233400011833</span>
-      <span class="footer__legal"><a href="/lisinashop-demo/oferta/">Договор оферты</a><a href="/lisinashop-demo/politika-konfidenczialnosti/">Политика конфиденциальности</a><a href="/lisinashop-demo/politika/">Обработка персональных данных</a></span>
+      <span class="footer__legal"><a href="/lisinashop-demo/oferta">Договор оферты</a><a href="/lisinashop-demo/politika-konfidenczialnosti">Политика конфиденциальности</a><a href="/lisinashop-demo/politika">Обработка персональных данных</a></span>
     </div>
   </div>
 </footer>
@@ -123,13 +147,15 @@
       <button class="icon-btn" type="button" data-action="close" aria-label="Закрыть"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <nav class="menu-list">
-      <a href="/lisinashop-demo/catalog/prof/" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/catalog/home/" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/catalog/badi/" data-action="close">Бады и активы <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/catalog/rezept/" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/catalog/sale/" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/favorites/" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/lisinashop-demo/delivery/" data-action="close">Доставка и оплата <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/" data-nav="home" data-action="close">Главная <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/pilulya_prof" data-nav="pilulya_prof" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/pilulya" data-nav="pilulya" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/badi" data-nav="badi" data-action="close">Бады <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/akzia" data-nav="akzia" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/rezept" data-nav="rezept" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/payment" data-nav="payment" data-action="close">Доставка <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/contakt" data-nav="contakt" data-action="close">Контакты <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/lisinashop-demo/favorites" data-nav="favorites" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="menu-foot">
@@ -219,8 +245,8 @@
 </svg>
 
 <script src="/lisinashop-demo/assets/vendor/lenis.min.js?v=44dcd10f"></script>
-<script src="/lisinashop-demo/data/products.js?v=01330211"></script>
+<script src="/lisinashop-demo/data/products.js?v=4c090688"></script>
 <script src="/lisinashop-demo/data/pages.js?v=b6381fee"></script>
-<script src="/lisinashop-demo/assets/app.js?v=3c4e36fe"></script>
+<script src="/lisinashop-demo/assets/app.js?v=ffe188d0"></script>
 </body>
 </html>

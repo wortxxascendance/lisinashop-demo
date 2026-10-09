@@ -6,6 +6,13 @@ import { HttpError, readJson, sendJson, createRateLimiter, clientIp, createStati
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Заявки с форм сайта: [ключ, подпись в сообщении, максимум символов, обязательное]
+const LEADS = {
+  collab: { title: 'Заявка блогера', fields: [['name', 'Имя', 100, true], ['surname', 'Фамилия', 100], ['email', 'E-mail', 120], ['phone', 'Телефон', 40, true], ['tg', 'Телеграм', 200], ['vk', 'ВК', 200]] },
+  review: { title: 'Отзыв', fields: [['name', 'Имя', 100, true], ['about', 'Город и профессия', 150], ['text', 'Отзыв', 3000, true], ['contact', 'Телефон или e-mail', 120]] },
+  support: { title: 'Вопрос в техподдержку', fields: [['name', 'Имя', 100, true], ['phone', 'Телефон', 40, true], ['text', 'Вопрос', 3000, true]] }
+};
+
 export function createApp({ cfg, orders, cdek, db, telegram, log = console }) {
   const serveStatic = createStaticHandler(cfg.publicDir);
   const limitLead = createRateLimiter({ windowMs: 10 * 60_000, max: 5 });
@@ -73,14 +80,18 @@ export function createApp({ cfg, orders, cdek, db, telegram, log = console }) {
     if (method === 'POST' && path === '/api/leads') {
       if (!limitLead(ip)) throw new HttpError(429, 'Слишком много заявок. Попробуйте позже', 'rate_limit');
       const body = await readJson(req);
-      const name = clean(body.name, 100);
-      const link = clean(body.link, 300);
-      if (body.type !== 'collab') throw new OrderError('Неизвестный тип заявки', 'bad_lead');
-      if (name.length < 2) throw new OrderError('Укажите имя', 'bad_name');
-      if (link.length < 4) throw new OrderError('Укажите ссылку на канал или блог', 'bad_link');
+      const kind = Object.hasOwn(LEADS, body.type) ? LEADS[body.type] : null;
+      if (!kind) throw new OrderError('Неизвестный тип заявки', 'bad_lead');
+      const f = body.fields && typeof body.fields === 'object' ? body.fields : {};
+      const lines = [];
+      for (const [key, label, max, need] of kind.fields) {
+        const v = clean(f[key], max);
+        if (need && v.length < 2) throw new OrderError(`Заполните поле «${label}»`, 'bad_field');
+        if (v) lines.push(`${label}: ${escHtml(v)}`);
+      }
       if (body.consent !== true) throw new OrderError('Нужно согласие на обработку персональных данных', 'no_consent');
       if (!telegram?.enabled) throw new HttpError(503, 'Приём заявок временно недоступен. Напишите нам в Telegram @piiilulya', 'leads_off');
-      await telegram.send(`<b>Заявка блогера</b>\nИмя: ${escHtml(name)}\nСсылка: ${escHtml(link)}`);
+      await telegram.send(`<b>${kind.title}</b>\n${lines.join('\n')}`);
       return sendJson(res, 201, { ok: true });
     }
 

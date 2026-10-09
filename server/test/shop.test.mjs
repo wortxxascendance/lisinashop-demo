@@ -288,7 +288,7 @@ test('HTTP: полный сценарий, ошибки и закрытые да
   });
 });
 
-test('HTTP: заявка блогера уходит в Telegram с экранированием, без согласия отклоняется', async () => {
+test('HTTP: заявки с форм уходят в Telegram с экранированием, без согласия и обязательных полей отклоняются', async () => {
   const h = harness();
   const tg = [];
   const app = createApp({ cfg: h.cfg, orders: h.orders, cdek: null, db: h.db, telegram: { enabled: true, async send(t) { tg.push(t); } }, log: quiet });
@@ -296,15 +296,21 @@ test('HTTP: заявка блогера уходит в Telegram с экрани
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
-    const ok = await post(`${base}/api/leads`, { type: 'collab', name: 'Аня <b>', link: 't.me/anya', consent: true });
+    const ok = await post(`${base}/api/leads`, { type: 'collab', fields: { name: 'Аня <b>', phone: '+79000000000', tg: 't.me/anya' }, consent: true });
     assert.equal(ok.status, 201);
+    assert.match(tg[0], /Заявка блогера/);
     assert.match(tg[0], /Аня &lt;b&gt;/);
-    assert.equal((await post(`${base}/api/leads`, { type: 'collab', name: 'Аня', link: 't.me/anya' })).status, 400);
-    assert.equal((await post(`${base}/api/leads`, { type: 'other', name: 'Аня', link: 't.me/anya', consent: true })).status, 400);
-    assert.equal(tg.length, 1);
+    assert.match(tg[0], /Телеграм: t\.me\/anya/);
+    const sup = await post(`${base}/api/leads`, { type: 'support', fields: { name: 'Оля', phone: '+79000000000', text: 'Где мой заказ?' }, consent: true });
+    assert.equal(sup.status, 201);
+    assert.match(tg[1], /Вопрос в техподдержку[\s\S]*Где мой заказ\?/);
+    assert.equal((await post(`${base}/api/leads`, { type: 'review', fields: { name: 'Оля' }, consent: true })).status, 400);
+    assert.equal((await post(`${base}/api/leads`, { type: 'collab', fields: { name: 'Аня', phone: '+79000000000' } })).status, 400);
+    assert.equal((await post(`${base}/api/leads`, { type: 'toString', fields: { name: 'Аня' }, consent: true })).status, 400);
+    assert.equal(tg.length, 2);
   } finally { await new Promise((r) => server.close(r)); }
   await withServer(h, async (b) => {
-    assert.equal((await post(`${b}/api/leads`, { type: 'collab', name: 'Аня', link: 't.me/anya', consent: true })).status, 503);
+    assert.equal((await post(`${b}/api/leads`, { type: 'collab', fields: { name: 'Аня', phone: '+79000000000' }, consent: true })).status, 503);
   });
 });
 

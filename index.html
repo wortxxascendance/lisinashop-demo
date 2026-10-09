@@ -42,22 +42,45 @@
       <span class="logo__word">Lisina<span>Shop</span></span>
     </a>
     <nav class="nav" aria-label="Основное меню">
-      <a href="/catalog/prof/" data-nav="prof">Pilulya Prof</a>
-      <a href="/catalog/home/" data-nav="home">Уход дома</a>
-      <a href="/catalog/badi/" data-nav="badi">Бады и активы</a>
-      <a href="/catalog/rezept/" data-nav="rezept">Сборники</a>
-      <a href="/catalog/sale/" data-nav="sale" class="nav__sale">Акции</a>
+      <a href="/pilulya_prof" data-nav="pilulya_prof">Pilulya Prof</a>
+      <a href="/pilulya" data-nav="pilulya">Уход дома</a>
+      <a href="/badi" data-nav="badi">Бады</a>
+      <a href="/akzia" data-nav="akzia" class="nav__sale">Акции</a>
+      <a href="/rezept" data-nav="rezept">Сборники</a>
+      <a href="/payment" data-nav="payment">Доставка</a>
+      <a href="/contakt" data-nav="contakt">Контакты</a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i i--xs"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="header__tools">
       <button class="icon-btn" type="button" data-action="open-search" aria-label="Поиск"><svg class="i"><use href="#i-search"/></svg></button>
-      <a class="icon-btn hide-xs" href="/favorites/" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
+      <a class="icon-btn hide-xs" href="/favorites" aria-label="Избранное"><svg class="i"><use href="#i-heart"/></svg><span class="badge" data-fav-count hidden>0</span></a>
       <button class="icon-btn cart-btn" type="button" data-action="open-cart" aria-label="Корзина"><svg class="i"><use href="#i-bag"/></svg><span class="cart-btn__sum" data-cart-sum></span><span class="badge" data-cart-count hidden>0</span></button>
     </div>
   </div>
 </header>
 
 <main id="app" tabindex="-1"></main>
+
+<!-- Окно товара: открывается поверх страницы раздела, как на старом сайте -->
+<div class="pmodal" id="pmodal" hidden data-lenis-prevent>
+  <div class="pmodal__backdrop" data-action="close-product"></div>
+  <div class="pmodal__panel" role="dialog" aria-modal="true" aria-label="Карточка товара">
+    <button class="icon-btn pmodal__close" type="button" data-action="close-product" aria-label="Закрыть"><svg class="i"><use href="#i-x"/></svg></button>
+    <div data-product-body></div>
+  </div>
+</div>
+<!-- /pmodal -->
+
+<!-- Связаться с нами -->
+<div class="fab" id="fab">
+  <div class="fab__menu" id="fab-menu" hidden>
+    <a href="tel:+79275103030"><span class="fab__ic"><svg class="i"><use href="#i-phone"/></svg></span>Телефон</a>
+    <a href="https://t.me/lisinashopGroop" target="_blank" rel="noopener"><span class="fab__ic"><svg class="i"><use href="#i-send"/></svg></span>Телеграм-канал</a>
+    <a href="https://t.me/piiilulya" target="_blank" rel="noopener"><span class="fab__ic"><svg class="i"><use href="#i-chat"/></svg></span>Техподдержка ТГ</a>
+    <button type="button" data-action="max"><span class="fab__ic fab__ic--max" aria-hidden="true">M</span>Max</button>
+  </div>
+  <button class="fab__btn" type="button" data-action="fab" aria-expanded="false" aria-controls="fab-menu" aria-label="Связаться с нами"><svg class="i"><use href="#i-chat"/></svg><svg class="i fab__x"><use href="#i-x"/></svg></button>
+</div>
 
 <footer class="footer" id="contacts">
   <div class="wrap">
@@ -75,17 +98,18 @@
       </div>
       <div class="footer__col">
         <h3>Каталог</h3>
-        <a href="/catalog/prof/">Pilulya Prof</a>
-        <a href="/catalog/home/">Уход дома</a>
-        <a href="/catalog/badi/">Бады и активы</a>
-        <a href="/catalog/rezept/">Сборники и протоколы</a>
-        <a href="/catalog/sale/">Акции</a>
+        <a href="/pilulya_prof">Pilulya Prof</a>
+        <a href="/pilulya">Уход дома</a>
+        <a href="/badi">Бады</a>
+        <a href="/rezept">Сборники и протоколы</a>
+        <a href="/akzia">Акции</a>
       </div>
       <div class="footer__col">
         <h3>Покупателям</h3>
-        <a href="/delivery/">Доставка и оплата</a>
-        <a href="/garant/">Гарантия и возврат</a>
-        <a href="/favorites/">Избранное</a>
+        <a href="/payment">Доставка и оплата</a>
+        <a href="/garant">Гарантия и возврат</a>
+        <a href="/contakt">Контакты</a>
+        <a href="/favorites">Избранное</a>
         <button type="button" class="linklike" data-action="open-quiz">Подбор ухода</button>
         <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение</a>
       </div>
@@ -98,7 +122,7 @@
     </div>
     <div class="footer__bottom">
       <span>© 2026 ООО «ЛИСИНА» · ИНН 3460085337 · ОГРН 1233400011833</span>
-      <span class="footer__legal"><a href="/oferta/">Договор оферты</a><a href="/politika-konfidenczialnosti/">Политика конфиденциальности</a><a href="/politika/">Обработка персональных данных</a></span>
+      <span class="footer__legal"><a href="/oferta">Договор оферты</a><a href="/politika-konfidenczialnosti">Политика конфиденциальности</a><a href="/politika">Обработка персональных данных</a></span>
     </div>
   </div>
 </footer>
@@ -112,13 +136,15 @@
       <button class="icon-btn" type="button" data-action="close" aria-label="Закрыть"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <nav class="menu-list">
-      <a href="/catalog/prof/" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/catalog/home/" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/catalog/badi/" data-action="close">Бады и активы <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/catalog/rezept/" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/catalog/sale/" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/favorites/" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
-      <a href="/delivery/" data-action="close">Доставка и оплата <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/" data-nav="home" data-action="close">Главная <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/pilulya_prof" data-nav="pilulya_prof" data-action="close">Pilulya Prof <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/pilulya" data-nav="pilulya" data-action="close">Уход дома <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/badi" data-nav="badi" data-action="close">Бады <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/akzia" data-nav="akzia" data-action="close" class="nav__sale">Акции <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/rezept" data-nav="rezept" data-action="close">Сборники <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/payment" data-nav="payment" data-action="close">Доставка <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/contakt" data-nav="contakt" data-action="close">Контакты <svg class="i"><use href="#i-chevron"/></svg></a>
+      <a href="/favorites" data-nav="favorites" data-action="close">Избранное <svg class="i"><use href="#i-chevron"/></svg></a>
       <a href="https://lisinaschool.ru" target="_blank" rel="noopener">Обучение <svg class="i"><use href="#i-arrow-up-right"/></svg></a>
     </nav>
     <div class="menu-foot">

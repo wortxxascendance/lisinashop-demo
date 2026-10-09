@@ -3,7 +3,8 @@
 //  1. собирает data/pages.js из content/ (юридические страницы);
 //  2. копирует сайт в папку сборки и добавляет ?v=хэш к скриптам и стилям, чтобы их можно было кешировать надолго;
 //  3. открывает каждую страницу в браузере без интерфейса и сохраняет готовый HTML (поисковики видят товары и тексты сразу);
-//  4. пишет sitemap.xml, robots.txt, 404.html и список редиректов со старых адресов Tilda.
+//  4. пишет sitemap.xml, robots.txt и 404.html.
+// Адреса страниц и окон товаров те же, что на Tilda (/badi, /pilulya_prof/tproduct/…), поэтому редиректы не нужны.
 // Параметры: --demo  --no-prerender  --out папка  --base /папка/  --site https://адрес
 // Для шага 3 нужен Chrome или Edge (путь можно задать переменной CHROME_PATH).
 import { readFile, writeFile, mkdir, rm, cp, readdir } from 'node:fs/promises';
@@ -26,8 +27,11 @@ const SITE = String(val('--site', process.env.SITE_URL || (DEMO ? 'https://wortx
 const API = DEMO ? '' : '/api';
 const PRERENDER = !has('--no-prerender');
 
-const CATS = ['prof', 'home', 'badi', 'rezept', 'sale'];
-const PAGE_ROUTES = ['delivery', 'oferta', 'politika', 'politika-konfidenczialnosti', 'garant', 'contacts'];
+const SECTION_ROUTES = ['pilulya_prof', 'pilulya', 'badi', 'rezept', 'akzia'];
+const PAGE_ROUTES = ['payment', 'contakt', 'oferta', 'politika', 'politika-konfidenczialnosti', 'garant'];
+const MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
+// адрес окна товара, как в assets/app.js (productPath)
+const productRoute = (p) => (p.oldPath ? p.oldPath.replace(/^\/+/, '') : `${MAIN[p.cat] || 'pilulya_prof'}/tproduct/0-${p.id}-${p.slug}`);
 const NOINDEX_ROUTES = ['checkout', 'favorites', 'order'];
 
 const log = (...a) => console.log('[build]', ...a);
@@ -132,7 +136,8 @@ async function prerender(template, routes) {
         results.set(route, await page.evaluate(() => ({
           title: document.title,
           head: [...document.head.querySelectorAll('meta[name="description"],link[rel="canonical"],meta[property^="og:"],meta[data-dyn],script[type="application/ld+json"]')].map((e) => e.outerHTML).join('\n'),
-          app: document.getElementById('app').innerHTML
+          app: document.getElementById('app').innerHTML,
+          modal: document.getElementById('pmodal').outerHTML
         })));
       } catch (e) { errors.push(`${route}: ${e.message}`); }
     }
@@ -149,13 +154,15 @@ function pageHtml(template, data) {
   return template
     .replace(/<title>[^<]*<\/title>/, () => `<title>${esc(data.title)}</title>`)
     .replace('</head>', () => `${data.head}\n</head>`)
-    .replace('<main id="app" tabindex="-1"></main>', () => `<main id="app" tabindex="-1">${data.app}</main>`);
+    .replace('<main id="app" tabindex="-1"></main>', () => `<main id="app" tabindex="-1">${data.app}</main>`)
+    .replace(/<div class="pmodal" id="pmodal"[\s\S]*?<!-- \/pmodal -->/, () => `${data.modal}
+<!-- /pmodal -->`);
 }
 
-// ---------- 4. sitemap, robots, редиректы ----------
+// ---------- 4. sitemap, robots ----------
 async function writeSeoFiles(products) {
   const today = new Date().toISOString().slice(0, 10);
-  const urls = ['', 'catalog/', ...CATS.map((c) => `catalog/${c}/`), ...PAGE_ROUTES.map((p) => `${p}/`), ...products.map((p) => `product/${p.slug}/`)];
+  const urls = ['', ...SECTION_ROUTES, ...PAGE_ROUTES, ...products.map(productRoute)];
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map((u) => `  <url><loc>${SITE}${BASE}${u}</loc><lastmod>${today}</lastmod></url>`).join('\n') + '\n</urlset>\n';
   await writeFile(join(OUT, 'sitemap.xml'), xml);
@@ -164,21 +171,6 @@ async function writeSeoFiles(products) {
     : `User-agent: *\n${NOINDEX_ROUTES.map((r) => `Disallow: /${r}/`).join('\n')}\nDisallow: /api/\n\nSitemap: ${SITE}/sitemap.xml\n`;
   await writeFile(join(OUT, 'robots.txt'), robots);
   if (DEMO) await writeFile(join(OUT, '.nojekyll'), '');
-}
-
-async function writeRedirects(products) {
-  const fixed = [
-    ['/pilulya_prof', '/catalog/prof/'], ['/pilulya', '/catalog/home/'], ['/badi', '/catalog/badi/'], ['/akzia', '/catalog/sale/'],
-    ['/rezept', '/catalog/rezept/'], ['/payment', '/delivery/'], ['/contakt', '/contacts/']
-  ];
-  const lines = ['# Создан tools/build.mjs. Подключите внутри server { } командой include (см. deploy/README.md).', '# Старые адреса Tilda -> новые адреса, ответ 301, чтобы не потерять позиции в поиске.'];
-  for (const [from, to] of fixed) lines.push(`location = ${from} { return 301 ${to}; }`);
-  for (const p of products) {
-    if (p.oldPath && p.oldPath.startsWith('/')) lines.push(`location = ${p.oldPath} { return 301 /product/${p.slug}/; }`);
-  }
-  await mkdir(join(ROOT, 'deploy'), { recursive: true });
-  await writeFile(join(ROOT, 'deploy/redirects.generated.conf'), lines.join('\n') + '\n');
-  return lines.length - 2;
 }
 
 // ---------- запуск ----------
@@ -191,7 +183,7 @@ async function main() {
   await writeFile(join(OUT, 'index.html'), template);
   log(`режим: ${DEMO ? 'демо' : 'боевая версия'}, base ${BASE}, сайт ${SITE}, папка ${OUT.replace(ROOT, '.')}`);
 
-  const routes = ['', 'catalog/', ...CATS.map((c) => `catalog/${c}/`), ...PAGE_ROUTES.map((p) => `${p}/`), 'checkout/', 'favorites/', 'order/', ...products.map((p) => `product/${p.slug}/`), '__not-found__/'];
+  const routes = ['', ...SECTION_ROUTES, ...PAGE_ROUTES, 'checkout', 'favorites', 'order/', ...products.map(productRoute), '__not-found__/'];
   if (PRERENDER) {
     log(`предварительная отрисовка: ${routes.length} страниц…`);
     const results = await prerender(template, routes);
@@ -212,7 +204,6 @@ async function main() {
     await writeFile(join(OUT, '404.html'), template);
   }
   await writeSeoFiles(products);
-  if (!DEMO) log(`редиректов со старых адресов: ${await writeRedirects(products)} (deploy/redirects.generated.conf)`);
   const files = (await readdir(OUT, { recursive: true })).length;
   log(`готово за ${((Date.now() - t0) / 1000).toFixed(1)} с, файлов: ${files}`);
 }

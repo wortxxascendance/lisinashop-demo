@@ -4,6 +4,7 @@
   'use strict';
 
   var PRODUCTS = window.LS_PRODUCTS || [];
+  var PARTS = window.LS_PARTS || {};
   var PAGES = window.LS_PAGES || {};
   var byId = {};
   var bySlug = {};
@@ -22,26 +23,37 @@
   var TILDA = window.LS_MODE === 'tilda';
   var HASH = window.LS_ROUTING === 'hash';
   var ASSET_BASE = window.LS_ASSET_BASE || BASE;
+  /* Ссылка на чат техподдержки в MAX. Пока её нет, кнопка MAX открывает форму вопроса (как на старом сайте) */
+  var MAX_URL = window.LS_MAX_URL || '';
+
+  /* Разделы каталога повторяют страницы lisinashop.ru. Полки идут в том же порядке, что на Tilda;
+     номер полки — группа товаров Tilda (storepartuid), состав и порядок товаров берутся из data/products.js (LS_PARTS) */
+  var SECTIONS = {
+    pilulya_prof: { title: 'Pilulya Prof', lead: 'Профессиональная линия PILULYA для салонов и мастеров: шампунь, маска, лосьон-концентрат и колор-добавки, которые берегут волосы во время окрашивания.',
+      shelves: [['Профессиональная линия', '926658578592'], ['Добавки', '870102572382'], ['Гиалуроновые мисты', '137248273552']] },
+    pilulya: { title: 'Уход дома', lead: 'Средства PILULYA для домашнего ухода: серия с феромонами, Cloud of Love, уход для роста волос, мисты и парфюмированные кремы.',
+      shelves: [['Серия с феромонами', '607263580471'], ['Серия Cloud of Love', '724367431762'], ['Серия для роста волос и постковид', '451135886322'], ['Мист и парфюм', '137248273552'], ['Кремы для рук и тела', '897377975092']] },
+    badi: { title: 'Бады', lead: 'Активы и ингредиенты для создания уходовой косметики своими руками. У каждого указаны INCI, рекомендованный ввод и pH.',
+      shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
+    rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
+      shelves: [['', '315090565642']] }
+  };
+  var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
+  var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
+  var SALE_LEAD = 'Выгодные наборы PILULYA. Количество акционных наборов ограничено.';
 
   function asset(p) { return /^(https?:|\/|data:)/.test(p) ? p : ASSET_BASE + p; }
   function link(path) { return HASH ? '#/' + path : BASE + path; }
+  /* Адреса как на Tilda: /badi, /payment…, окно товара — /<страница>/tproduct/<номер>-<uid>-<slug> */
+  function productPath(p) { return p.oldPath ? p.oldPath.replace(/^\/+/, '') : (MAIN[p.cat] || 'pilulya_prof') + '/tproduct/0-' + p.id + '-' + p.slug; }
   var U = {
     home: function () { return link(''); },
-    catalog: function (cat) { return link('catalog/' + (cat && cat !== 'all' ? cat + '/' : '')); },
-    product: function (id) { var p = byId[id]; return link('product/' + (p ? p.slug : id) + '/'); },
-    page: function (slug) { return link(slug + '/'); },
+    section: function (key) { return link(key); },
+    catalog: function () { return link('pilulya_prof'); },
+    product: function (id) { var p = byId[id]; return p ? link(productPath(p)) : link(''); },
+    page: function (slug) { return link(slug); },
     order: function (id) { return link('order/' + id + '/'); }
   };
-
-  var CATS = {
-    prof: { title: 'Pilulya Prof', lead: 'Профессиональная линия PILULYA для салонов и мастеров: шампунь, маска, лосьон-концентрат и колор-добавки, которые берегут волосы во время окрашивания.' },
-    home: { title: 'Уход дома', lead: 'Средства PILULYA для домашнего ухода: восстановление, рост волос, мисты с гиалуроновой кислотой, серия Cloud of love и парфюмированные кремы.' },
-    badi: { title: 'Бады и активы', lead: 'Активы и ингредиенты для создания уходовой косметики своими руками. У каждого указаны INCI, рекомендованный ввод и pH.' },
-    rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.' },
-    sale: { title: 'Акции и новинки', lead: 'Выгодные наборы PILULYA и свежие поступления. Количество акционных наборов ограничено.' },
-    all: { title: 'Весь каталог', lead: 'Профессиональная косметика PILULYA, активы для тритментологов и электронные сборники рецептов.' }
-  };
-  var CAT_ORDER = ['all', 'prof', 'home', 'badi', 'rezept', 'sale'];
 
   var REVIEWS = [
     { n: 'Людмила Чеснокова', r: 'колорист, Архангельск', t: 'Отличные компоненты. Заказываю постоянно, только здесь. Если всё сделать правильно, получается рабочий продукт, который быстро восстанавливает волосы. Все мои блондинки обожают эту косметику.' },
@@ -65,16 +77,6 @@
   function plural(n, a, b, c) { var m = n % 10, h = n % 100; return (m === 1 && h !== 11) ? a : (m >= 2 && m <= 4 && (h < 12 || h > 14)) ? b : c; }
   function find(part) { part = norm(part); for (var i = 0; i < PRODUCTS.length; i++) if (norm(PRODUCTS[i].title).indexOf(part) !== -1) return PRODUCTS[i]; return null; }
   function pick(list) { return list.map(find).filter(Boolean); }
-  function inCat(p, cat) {
-    if (cat === 'all') return true;
-    if (cat === 'sale') return p.old > 0 || p.mark === 'NEW';
-    return p.in.some(function (x) { return x[0] === cat; });
-  }
-  function subsOf(p, cat) {
-    if (cat === 'sale') return [p.old > 0 ? 'Спецпредложения' : 'Новинки'];
-    if (cat === 'all') return [p.sub];
-    return p.in.filter(function (x) { return x[0] === cat; }).map(function (x) { return x[1]; });
-  }
   function isDigital(p) { return p.cat === 'rezept'; }
   function minPrice(p) { return p.opts ? Math.min.apply(null, p.opts.values.map(function (v) { return v.price; })) : p.price; }
   function optPrice(p, opt) { return p.opts && p.opts.values[opt] ? p.opts.values[opt].price : p.price; }
@@ -191,21 +193,19 @@
     var on = favs.indexOf(p.id) !== -1;
     return '<button type="button" class="icon-btn ' + cls + (on ? ' is-fav' : '') + '" data-action="fav" data-fav="' + p.id + '" aria-pressed="' + on + '" aria-label="В избранное">' + icon(on ? 'i-heart-fill' : 'i-heart') + '</button>';
   }
-  function card(p, ctx) {
+  function card(p, label) {
     var spec = p.cat === 'badi' ? specOf(p) : null;
-    var sub = ctx ? (subsOf(p, ctx)[0] || p.sub) : p.sub;
+    var sub = label == null ? p.sub : label;
     var line = spec && spec.inci ? '<p class="card__inci" title="' + esc(spec.inci) + '">INCI: ' + esc(spec.inci) + '</p>' : '';
     return '<article class="card">' +
       '<a class="card__media" href="' + U.product(p.id) + '" aria-label="' + esc(p.title) + '">' + imgTag(img(p, 0), p.title) + (p.images[1] ? imgTag(img(p, 1), '', ' aria-hidden="true"') : '') + marks(p) + '</a>' +
       favBtn(p, 'card__fav') +
-      '<div class="card__body"><span class="card__sub">' + esc(sub) + '</span>' +
+      '<div class="card__body">' + (sub ? '<span class="card__sub">' + esc(sub) + '</span>' : '') +
       '<a class="card__title" href="' + U.product(p.id) + '">' + esc(p.title) + '</a>' + line +
       '<div class="card__foot" data-foot="' + p.id + '">' + footInner(p) + '</div></div></article>';
   }
 
   /* ---------- Роутинг ---------- */
-  var PAGE_SLUGS = ['delivery', 'oferta', 'politika', 'politika-konfidenczialnosti', 'garant', 'contacts'];
-
   var lastHashRel = '';
   function route() {
     var rel;
@@ -221,18 +221,42 @@
     rel = rel.replace(/index\.html$/, '').replace(/^\/+|\/+$/g, '');
     if (!rel) return { name: 'home' };
     var parts = rel.split('/');
-    if (parts[0] === 'catalog' && parts.length <= 2) {
-      if (!parts[1]) return { name: 'catalog', cat: 'all' };
-      if (parts[1] !== 'all' && CATS[parts[1]]) return { name: 'catalog', cat: parts[1] };
+    var m = rel.match(/^(?:([a-z0-9_]+)\/)?tproduct\/\d+-(\d+)(?:-|$)/);
+    if (m && byId[m[2]]) return { name: 'product', id: m[2], page: m[1] || '' };
+    if (parts.length === 1) {
+      if (SECTIONS[rel]) return { name: 'section', key: rel };
+      if (rel === 'akzia' || rel === 'contakt' || rel === 'checkout' || rel === 'favorites') return { name: rel };
+      if (INFO[rel]) return { name: 'page', slug: rel };
+      // адреса прошлой версии витрины
+      if (rel === 'pilulya_1') return { name: 'section', key: 'pilulya' }; // служебные страницы Tilda
+      if (rel === 'teaser2') return { name: 'section', key: 'badi' };
+      if (rel === 'catalog') return { name: 'section', key: 'pilulya_prof' };
+      if (rel === 'delivery') return { name: 'page', slug: 'payment' };
+      if (rel === 'contacts') return { name: 'contakt' };
     }
-    if (parts[0] === 'product' && parts.length === 2 && bySlug[parts[1]]) return { name: 'product', id: bySlug[parts[1]].id };
+    if (parts[0] === 'catalog' && parts.length === 2) {
+      if (parts[1] === 'sale') return { name: 'akzia' };
+      if (MAIN[parts[1]]) return { name: 'section', key: MAIN[parts[1]] };
+    }
+    if (parts[0] === 'product' && parts.length === 2 && bySlug[parts[1]]) return { name: 'product', id: bySlug[parts[1]].id, page: '' };
     if (parts[0] === 'order' && parts.length <= 2) return { name: 'order', oid: parts[1] || '' };
-    if (parts.length === 1 && (parts[0] === 'checkout' || parts[0] === 'favorites')) return { name: parts[0] };
-    if (parts.length === 1 && PAGE_SLUGS.indexOf(parts[0]) !== -1) return { name: 'page', slug: parts[0] };
     return { name: 'notfound' };
   }
+  function routeKey(r) { return r.name + ':' + (r.key || r.slug || r.oid || ''); }
+  function urlFor(r) {
+    if (r.name === 'home' || r.name === 'notfound') return U.home();
+    if (r.name === 'section') return U.section(r.key);
+    if (r.name === 'page') return U.page(r.slug);
+    if (r.name === 'order') return U.order(r.oid);
+    return U.page(r.name);
+  }
+  /* Под окном товара открыта страница раздела, где он стоит (как на Tilda) */
+  function baseOf(r) {
+    if (SECTIONS[r.page]) return { name: 'section', key: r.page };
+    if (r.page === 'akzia') return { name: 'akzia' };
+    return { name: 'section', key: MAIN[byId[r.id].cat] || 'pilulya_prof' };
+  }
 
-  var catState = { cat: null, sub: '', q: '', sort: 'pop' };
   var pdpOpt = 0;
   var lastOrder = null;
 
@@ -273,7 +297,7 @@
   function setMeta(m) {
     document.title = m.title;
     if (TILDA) return; // на странице Tilda описание, canonical и запрет индексации задаёт сама Tilda
-    var url = SITE ? SITE + location.pathname : '';
+    var url = SITE ? SITE + location.pathname.replace(/(.)\/+$/, '$1') : '';
     setTag('meta[name="description"]', 'meta', { name: 'description', content: m.description });
     if (url) setTag('link[rel="canonical"]', 'link', { rel: 'canonical', href: url });
     else { var c = document.head.querySelector('link[rel="canonical"]'); if (c) c.remove(); }
@@ -297,9 +321,9 @@
       return { title: 'LisinaShop — профессиональная косметика PILULYA, активы и рецепты для волос', description: HOME_DESC,
         ld: { '@context': 'https://schema.org', '@type': 'Organization', name: 'LisinaShop', legalName: 'ООО «ЛИСИНА»', url: home + BASE, logo: absUrl('assets/img/hero-wide.webp'), email: 'info@lisinashop.ru', telephone: '+7 927 510-30-30', taxID: '3460085337', sameAs: ['https://t.me/lisinashopGroop'] } };
     }
-    if (r.name === 'catalog') {
-      return { title: r.cat === 'all' ? 'Каталог — LisinaShop' : CATS[r.cat].title + ' — купить в LisinaShop', description: CATS[r.cat].lead };
-    }
+    if (r.name === 'section') return { title: SECTIONS[r.key].title + ' — купить в LisinaShop', description: SECTIONS[r.key].lead };
+    if (r.name === 'akzia') return { title: 'Акции — LisinaShop', description: SALE_LEAD + ' Бесплатная доставка СДЭК от 4 500 ₽.' };
+    if (r.name === 'contakt') return { title: 'Контакты — LisinaShop', description: 'Телефон, почта и техподдержка интернет-магазина LisinaShop в Telegram и MAX. ООО «ЛИСИНА», Волгоград.' };
     if (r.name === 'product') {
       var p = byId[r.id];
       var desc = clip((p.short ? p.short.replace(/[.\s]+$/, '') + '. ' : '') + plainText(p.html), 155);
@@ -309,7 +333,7 @@
       return { title: p.title + ' — купить в LisinaShop', description: desc || HOME_DESC, image: p.images[0], type: 'product', ld: ld };
     }
     if (r.name === 'page') {
-      var pg = PAGES[r.slug] || {};
+      var pg = PAGES[INFO[r.slug]] || {};
       return { title: (pg.title || 'Информация') + ' — LisinaShop', description: pg.description || HOME_DESC };
     }
     if (r.name === 'checkout') return { title: 'Оформление заказа — LisinaShop', description: HOME_DESC, noindex: true };
@@ -318,39 +342,110 @@
     return { title: 'Страница не найдена — LisinaShop', description: HOME_DESC, noindex: true };
   }
 
+  var renderedKey = '';
+  var renderedRoute = null;
+  var productOpen = false;
   function render(resetScroll) {
     var r = route();
     closeAll(true);
-    if (r.name === 'home') app.innerHTML = homeView();
-    else if (r.name === 'catalog') app.innerHTML = catalogView(r.cat);
-    else if (r.name === 'product') app.innerHTML = productView(byId[r.id]);
-    else if (r.name === 'checkout') app.innerHTML = checkoutView();
-    else if (r.name === 'favorites') app.innerHTML = favoritesView();
-    else if (r.name === 'page') app.innerHTML = pageView(r.slug);
-    else if (r.name === 'order') app.innerHTML = orderView(r.oid);
-    else app.innerHTML = notFoundView();
-    if (r.name === 'catalog') catalogResults();
+    if (r.name === 'product') {
+      if (!renderedKey) { renderBase(baseOf(r)); if (resetScroll) scrollTop(); }
+      showProduct(byId[r.id]);
+    } else if (productOpen && routeKey(r) === renderedKey) {
+      hideProduct();
+      if (r.name === 'favorites') renderBase(r);
+    } else {
+      hideProduct();
+      renderBase(r);
+      if (resetScroll) scrollTop();
+    }
+    setMeta(metaFor(r));
+  }
+
+  /* Страница под окном товара. Блок техподдержки — на каждой странице, кроме оформления, как на старом сайте */
+  function renderBase(r) {
+    renderedKey = routeKey(r);
+    renderedRoute = r;
+    var v;
+    if (r.name === 'home') v = homeView();
+    else if (r.name === 'section') v = sectionView(r.key);
+    else if (r.name === 'akzia') v = akziaView();
+    else if (r.name === 'contakt') v = contactsView();
+    else if (r.name === 'checkout') v = checkoutView();
+    else if (r.name === 'favorites') v = favoritesView();
+    else if (r.name === 'page') v = pageView(r.slug);
+    else if (r.name === 'order') v = orderView(r.oid);
+    else v = notFoundView();
+    app.innerHTML = v + (r.name === 'checkout' || r.name === 'order' ? '' : supportView());
     if (r.name === 'checkout') afterCheckoutRender();
     if (r.name === 'order') startOrderPolling(r.oid);
-    $all('.nav a[data-nav]').forEach(function (a) { a.classList.toggle('is-active', r.name === 'catalog' && a.getAttribute('data-nav') === r.cat); });
-    setMeta(metaFor(r));
-    if (resetScroll) scrollTop();
+    var nav = r.name === 'section' ? r.key : r.name === 'page' ? r.slug : r.name;
+    $all('[data-nav]').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-nav') === nav); });
     setupReveal(app);
     setupMagnetic(app);
     if (r.name === 'home' && booted) heroEnter();
   }
 
-  /* ---------- Главная ---------- */
+  /* ---------- Окно товара (как всплывающая карточка на Tilda) ---------- */
+  var pmodal = document.getElementById('pmodal');
+  var productFocus = null;
+  function showProduct(p) {
+    $('[data-product-body]', pmodal).innerHTML = productView(p);
+    if (!productOpen) {
+      productFocus = document.activeElement;
+      productOpen = true;
+      pmodal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      if (lenis) lenis.stop();
+      setTimeout(function () { var c = $('.pmodal__close', pmodal); if (c) c.focus({ preventScroll: true }); }, 40);
+    }
+    pmodal.scrollTop = 0;
+  }
+  function hideProduct() {
+    if (!productOpen && pmodal.hidden) return;
+    productOpen = false;
+    pmodal.hidden = true;
+    $('[data-product-body]', pmodal).innerHTML = '';
+    document.body.style.overflow = '';
+    if (lenis && booted) lenis.start();
+    if (productFocus && productFocus.focus && document.contains(productFocus)) productFocus.focus({ preventScroll: true });
+    productFocus = null;
+  }
+
+  /* ---------- Общие куски страниц ---------- */
+  function pageHead(title, lead, extra) {
+    return '<section class="page-head"><div class="wrap">' + crumbs(esc(title)) + '<h1 class="h2">' + esc(title) + '</h1>' +
+      (lead ? '<p class="lead">' + lead + '</p>' : '') + (extra || '') + '</div></section>';
+  }
+  function railNav(target) {
+    return '<div class="rail-nav"><button type="button" data-action="rail" data-dir="-1" data-target="' + target + '" aria-label="Прокрутить назад">' + icon('i-chevron-left') + '</button><button type="button" data-action="rail" data-dir="1" data-target="' + target + '" aria-label="Прокрутить вперёд">' + icon('i-chevron') + '</button></div>';
+  }
+  function scrollToEl(el) {
+    var y = el.getBoundingClientRect().top + (window.scrollY || 0) - (header.offsetHeight + 16);
+    if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
+  }
+  function shelfItems(part) { return (PARTS[part] || []).map(function (id) { return byId[id]; }).filter(Boolean); }
+  function countIn(key) {
+    var seen = {};
+    SECTIONS[key].shelves.forEach(function (sh) { shelfItems(sh[1]).forEach(function (p) { seen[p.id] = 1; }); });
+    return Object.keys(seen).length;
+  }
+  function eNote() {
+    return '<div class="note">' + icon('i-mail') + '<span>' + (TILDA
+      ? 'Если вы заказываете только сборники или видеоуроки, выбирайте способ доставки «Заказ электронных сборников»: ссылки придут на почту.'
+      : 'Если вы заказываете только сборники или видеоуроки, доставка не нужна: ссылки придут на почту, указанную при оформлении, сразу после оплаты.') + '</span></div>';
+  }
+
+  /* ---------- Главная: первый экран, дальше блоки в порядке старого сайта ---------- */
   function homeView() {
+    return heroSection() + kitSection() + promosSection(true) + noveltySection() + tilesSection() + shipBanner(true) +
+      quizSection() + collabSection() + reviewsSection() + reviewFormSection();
+  }
+
+  function heroSection() {
     var filler = find('MOLECULAR LIPID');
     var kit = find('тартовый набор');
-    var set1 = find('Шампунь + Маска + Подарок');
-    var set2 = find('КОЛОР СТРАХОВКА');
-    var box = find('ТРИТМЕНТОЛОГА');
-    var protocol = find('Молекулярный каркас');
-    var count = function (c) { return PRODUCTS.filter(function (p) { return inCat(p, c); }).length; };
-
-    var hero = '<section class="hero"><div class="wrap hero__grid">' +
+    return '<section class="hero"><div class="wrap hero__grid">' +
       '<div class="hero__text">' +
         (filler ? '<a class="hero__tag" data-in style="--d:.05s" href="' + U.product(filler.id) + '"><b>NEW</b> Филлер-реконструктор Molecular Lipid ' + icon('i-arrow', 'i--xs') + '</a>' : '') +
         '<h1 class="h1"><span class="hl"><span style="--i:0">Уход за волосами</span></span><span class="hl"><span style="--i:1"><em>профессионального</em></span></span><span class="hl"><span style="--i:2">уровня</span></span></h1>' +
@@ -363,210 +458,292 @@
         (kit ? '<a class="hero__seal" data-in style="--d:1.1s" href="' + U.product(kit.id) + '" aria-label="Стартовый набор со скидкой 62%"><svg class="seal__ring" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="seal-path" d="M60,60 m-47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0"/></defs><text><textPath href="#seal-path" textLength="290">СТАРТОВЫЙ НАБОР · ВЫГОДА · PILULYA ·</textPath></text></svg><span class="seal__c">−62%</span></a>' : '') +
         (filler ? '<a class="hero__card" data-in style="--d:1.25s" href="' + U.product(filler.id) + '">' + imgTag(img(filler, 0), '') + '<p><b>Molecular Lipid</b>Филлер для повреждённых волос · ' + money(filler.price) + '</p></a>' : '') +
       '</div></div></section>';
+  }
 
-    var perks = '<section class="perks" aria-label="Преимущества"><div class="wrap perks__grid">' +
-      perk('i-tag', 'На 15% дешевле, чем на WB', 'Покупайте напрямую у бренда') +
-      perk('i-truck', 'Бесплатная доставка', 'СДЭК при заказе от 4 500 ₽') +
-      perk('i-flask', 'Составы с INCI', 'Ввод и pH для каждого актива') +
-      perk('i-cap', 'Обучение', 'Академия Татьяны Лисиной') +
-      '</div></section>';
-
-    var cats = '<section class="section"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Каталог</p><h2 class="h2">Всё для ухода — <em>в одном месте</em></h2></div><a class="link-arrow" href="' + U.catalog() + '">Весь каталог ' + icon('i-arrow') + '</a></div>' +
-      '<div class="cats">' +
-        catTile('prof', 'cat--lg', 'assets/img/prof-shampoo.webp', 'Профессиональная линия для салонов: шампунь, маска и колор-добавки.', count('prof')) +
-        catTile('home', 'cat--md', 'assets/img/growth.webp', 'Восстановление, рост волос, мисты и кремы с феромонами.', count('home')) +
-        catTile('badi', '', box ? img(box, 0) : '', 'Активы с INCI для своей косметики.', count('badi')) +
-        catTile('rezept', '', protocol ? img(protocol, 0) : '', 'Рецепты и протоколы в PDF.', count('rezept')) +
+  function kitSection() {
+    var kit = find('тартовый набор');
+    if (!kit) return '';
+    var items = (kit.html.match(/<li>(.*?)<\/li>/g) || []).map(function (s) { return s.replace(/<[^>]+>/g, '').trim(); }).filter(function (s) { return /\d\s*шт/.test(s); });
+    var share = kit.old ? Math.round(kit.price / kit.old * 100) : 0;
+    return '<section class="section kit"><div class="wrap kit__grid">' +
+      '<div class="kit__img">' + imgTag('assets/img/starter-kit.webp', 'Стартовый набор PILULYA') + (kit.old ? '<span class="mark mark--sale">−' + (100 - share) + '%</span>' : '') + '</div>' +
+      '<div class="kit__text"><p class="eyebrow">Специальное предложение</p>' +
+        '<h2 class="h2">Стартовый набор «Пилюля»</h2>' +
+        '<p class="lead">69 единиц продукции: полный розничный ассортимент бренда и профессиональные средства для работы в салоне.</p>' +
+        '<div class="kit__save">' +
+          (kit.old ? '<div class="kit__row"><span>Стоимость по розничным ценам</span><s>' + money(kit.old) + '</s></div>' : '') +
+          '<div class="kit__row"><strong data-count="' + kit.price + '"' + (kit.old ? ' data-from="' + kit.old + '"' : '') + ' data-suffix=" ₽">' + money(kit.price) + '</strong>' + (kit.old ? '<span class="kit__save-badge">Экономия ' + money(kit.old - kit.price) + '</span>' : '') + '</div>' +
+          '<div class="kit__bar" aria-hidden="true"><i></i></div>' +
+          (share ? '<p class="kit__note">Вы платите ' + share + '% от розничной стоимости. Всего 100 наборов.</p>' : '') +
+        '</div>' +
+        (items.length ? '<ul class="kit__list">' + items.slice(0, 6).map(function (s) { return '<li>' + icon('i-check') + '<span>' + esc(s) + '</span></li>'; }).join('') + '</ul>' : '') +
+        '<div class="kit__actions"><button type="button" class="btn btn--rose" data-magnetic data-action="add" data-id="' + kit.id + '">Добавить в корзину ' + icon('i-bag') + '</button><a class="btn btn--outline-light" href="' + U.product(kit.id) + '">Весь состав набора</a></div>' +
       '</div></div></section>';
+  }
 
-    var kitBlock = '';
-    if (kit) {
-      var items = (kit.html.match(/<li>(.*?)<\/li>/g) || []).map(function (s) { return s.replace(/<[^>]+>/g, '').trim(); }).filter(function (s) { return /\d\s*шт/.test(s); });
-      kitBlock = '<section class="section kit"><div class="wrap kit__grid">' +
-        '<div class="kit__img">' + imgTag('assets/img/starter-kit.webp', 'Стартовый набор PILULYA') + '<span class="mark mark--sale">−62%</span></div>' +
-        '<div class="kit__text"><p class="eyebrow">Специальное предложение</p>' +
-          '<h2 class="h2">Стартовый набор «Пилюля»</h2>' +
-          '<p class="lead">69 единиц продукции: полный розничный ассортимент бренда и профессиональные средства для работы в салоне.</p>' +
-          '<div class="kit__save">' +
-            '<div class="kit__row"><span>Стоимость по розничным ценам</span><s>' + money(kit.old) + '</s></div>' +
-            '<div class="kit__row"><strong data-count="' + kit.price + '" data-from="' + kit.old + '" data-suffix=" ₽">' + money(kit.price) + '</strong><span class="kit__save-badge">Экономия ' + money(kit.old - kit.price) + '</span></div>' +
-            '<div class="kit__bar" aria-hidden="true"><i></i></div>' +
-            '<p class="kit__note">Вы платите 38% от розничной стоимости. Всего 100 наборов.</p>' +
-          '</div>' +
-          (items.length ? '<ul class="kit__list">' + items.slice(0, 6).map(function (s) { return '<li>' + icon('i-check') + '<span>' + esc(s) + '</span></li>'; }).join('') + '</ul>' : '') +
-          '<div class="kit__actions"><button type="button" class="btn btn--rose" data-magnetic data-action="add" data-id="' + kit.id + '">Добавить в корзину ' + icon('i-bag') + '</button><a class="btn btn--outline-light" href="' + U.product(kit.id) + '">Весь состав набора</a></div>' +
-        '</div></div></section>';
-    }
-
-    var promos = '<section class="section"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div><a class="link-arrow" href="' + U.catalog('sale') + '">Все акции и новинки ' + icon('i-arrow') + '</a></div>' +
+  function promosSection(withLink) {
+    var set1 = find('Шампунь + Маска + Подарок');
+    var set2 = find('КОЛОР СТРАХОВКА');
+    if (!set1 && !set2) return '';
+    return '<section class="section"><div class="wrap">' +
+      '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div>' + (withLink ? '<a class="link-arrow" href="' + U.page('akzia') + '">Все акции ' + icon('i-arrow') + '</a>' : '') + '</div>' +
       '<div class="promos">' +
-        (set1 ? promo(set1, '', 'Маска + шампунь, филлер в подарок', 'Купите шампунь и маску серии PROFESSIONAL и получите филлер Molecular Lipid в подарок.', 'assets/img/hero-wide.webp') : '') +
+        (set1 ? promo(set1, '', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.', 'assets/img/hero-wide.webp') : '') +
         (set2 ? promo(set2, 'promo--alt', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.', 'assets/img/color-additives.webp') : '') +
       '</div></div></section>';
-
-    var hits = '<section class="section section--tight"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Выбор покупателей</p><h2 class="h2">Хиты и новинки</h2></div>' +
-        '<div class="head-tools"><div class="tabs" role="tablist" aria-label="Подборки">' +
-          '<button type="button" class="chip is-active" role="tab" aria-selected="true" data-action="hits" data-set="hits">Хиты PILULYA</button>' +
-          '<button type="button" class="chip" role="tab" aria-selected="false" data-action="hits" data-set="new">Новинки</button>' +
-          '<button type="button" class="chip" role="tab" aria-selected="false" data-action="hits" data-set="pro">Для тритментологов</button>' +
-        '</div>' + railNav('hits-rail') + '</div>' +
-      '</div><div class="rail" id="hits-rail">' + hitsSet('hits') + '</div></div></section>';
-
-    var quiz = '<section class="section section--tight"><div class="wrap"><div class="quiz-cta">' + fox('quiz-cta__fox') +
-      '<div class="quiz-cta__text"><p class="eyebrow">Протокол ухода</p><h2 class="h2">Подберём уход за&nbsp;1&nbsp;минуту</h2><p class="lead">Ответьте на три вопроса о волосах, а мы соберём персональный протокол из средств PILULYA и активов.</p><button type="button" class="btn" data-magnetic data-action="open-quiz">Пройти тест ' + icon('i-arrow') + '</button></div>' +
-      '<div class="quiz-cta__steps"><div><b>1</b>Какие у вас волосы</div><div><b>2</b>Где вы за ними ухаживаете</div><div><b>3</b>Какой результат нужен</div></div>' +
-      '</div></div></section>';
-
-    var nBooks = count('rezept');
-    var booksBlock = '<section class="section section--blush"><div class="wrap books">' +
-      '<div class="books__intro"><p class="eyebrow">Сборники и уроки</p><h2 class="h2">Рецепты от&nbsp;тритментолога</h2>' +
-        '<ul><li>' + icon('i-mail') + 'Электронный формат: ссылка приходит на почту сразу после оплаты</li><li>' + icon('i-flask') + 'Точные формулы с вводом каждого актива</li><li>' + icon('i-spark') + 'От ' + money(200) + ' за сборник</li></ul>' +
-        '<a class="btn" href="' + U.catalog('rezept') + '">Все ' + nBooks + ' ' + plural(nBooks, 'сборник', 'сборника', 'сборников') + ' ' + icon('i-arrow') + '</a></div>' +
-      '<div class="grid grid--3">' + pick(['Протокол - Молекулярный каркас', 'протокол реконструкции блондированных', 'Протокол SOS', 'Шелковое полотно', 'Сборник №1', 'Видеоурок №3']).map(function (p) { return card(p); }).join('') + '</div>' +
-      '</div></section>';
-
-    var school = '<section class="section"><div class="wrap"><div class="school">' +
-      '<div class="school__img">' + imgTag('assets/img/trio.webp', 'Академия Татьяны Лисиной') + '</div>' +
-      '<div class="school__text"><p class="eyebrow">Обучение</p><h2 class="h2">Академия Татьяны Лисиной</h2>' +
-        '<p class="lead">Курсы «Тритментолог» и «Тритментолог-лаборант»: научитесь создавать косметику для волос и выстраивать протоколы ухода для клиентов.</p>' +
-        '<ul class="school__list"><li>' + icon('i-check') + 'Работа с активами и расчёт формул</li><li>' + icon('i-check') + 'Индивидуальные маски и уходы в салоне</li><li>' + icon('i-check') + 'Рост среднего чека услуг</li></ul>' +
-        '<a class="btn" href="https://lisinaschool.ru" target="_blank" rel="noopener">Перейти на lisinaschool.ru ' + icon('i-arrow-up-right') + '</a></div>' +
-      '</div></div></section>';
-
-    var reviews = '<section class="section section--tight reviews"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Отзывы мастеров</p><h2 class="h2">Нам доверяют колористы и&nbsp;салоны</h2></div>' +
-      '<div class="head-tools">' + railNav('rev-rail') + '</div></div>' +
-      '<div class="rail" id="rev-rail">' + REVIEWS.map(function (r) {
-        var ini = r.n.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2);
-        return '<figure class="review" style="margin:0"><div class="review__stars" role="img" aria-label="Оценка 5 из 5">' + icon('i-star') + icon('i-star') + icon('i-star') + icon('i-star') + icon('i-star') + '</div><blockquote>' + esc(r.t) + '</blockquote><figcaption class="review__who"><span class="avatar" aria-hidden="true">' + esc(ini) + '</span><div><b>' + esc(r.n) + '</b><span>' + esc(r.r) + '</span></div></figcaption></figure>';
-      }).join('') + '</div></div></section>';
-
-    var collab = '<section class="section section--tight"><div class="wrap"><div class="collab">' +
-      '<div class="collab__img">' + imgTag('assets/img/pool.webp', 'Косметика PILULYA у бассейна') + '</div>' +
-      '<div class="collab__text"><p class="eyebrow">Для блогеров</p><h2 class="h2">Дарим косметику PILULYA за&nbsp;честный отзыв</h2>' +
-        '<p class="lead">Ведёте Telegram-канал или блог ВКонтакте от 500 подписчиков? Оставьте заявку, мы пришлём косметику и обсудим детали.</p>' +
-        (TILDA
-          ? '<div><a class="btn btn--rose" href="https://t.me/piiilulya" target="_blank" rel="noopener">Оставить заявку в Telegram ' + icon('i-send') + '</a></div>'
-          : '<form class="form" data-form="collab" novalidate>' +
-            '<div class="form__row"><div class="field"><label for="c-name">Имя</label><input class="input input--dark" id="c-name" name="name" placeholder="Как к вам обращаться" required></div>' +
-            '<div class="field"><label for="c-link">Ссылка на канал или блог</label><input class="input input--dark" id="c-link" name="link" placeholder="t.me/… или vk.com/…" required></div></div>' +
-            '<label class="check"><input type="checkbox" id="c-agree" required> Даю согласие на обработку персональных данных</label>' +
-            '<button class="btn btn--rose" type="submit">Отправить заявку</button>' +
-          '</form>') + '</div>' +
-      '</div></div></section>';
-
-    var support = '<section class="section section--tight"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Поддержка</p><h2 class="h2">Остались вопросы?</h2></div><p class="muted" style="max-width:40ch">Поможем подобрать уход, рассчитать формулу или отследить заказ.</p></div>' +
-      '<div class="support">' +
-        '<a class="support__item" href="https://t.me/piiilulya" target="_blank" rel="noopener"><span class="perk__ic">' + icon('i-send') + '</span><div><b>Техподдержка в Telegram</b><span>@piiilulya</span></div></a>' +
-        '<a class="support__item" href="tel:+79275103030"><span class="perk__ic">' + icon('i-phone') + '</span><div><b>+7 (927) 510-30-30</b><span>Звонок по России</span></div></a>' +
-        '<a class="support__item" href="mailto:info@lisinashop.ru"><span class="perk__ic">' + icon('i-mail') + '</span><div><b>info@lisinashop.ru</b><span>Для заказов и предложений</span></div></a>' +
-      '</div></div></section>';
-
-    var words = ['Молекулярная реконструкция', 'Протеины шёлка', 'Церамиды', 'Гиалуроновая кислота', 'PILULYA Professional', 'Кератин', 'Феромоны', 'Биомиметики'];
-    var row = words.map(function (w) { return '<span class="marquee__item">' + esc(w) + fox('') + '</span>'; }).join('');
-    var marquee = '<div class="marquee" aria-hidden="true"><div class="marquee__skew"><div class="marquee__track">' + row + row + '</div></div></div>';
-
-    return hero + perks + cats + kitBlock + marquee + promos + hits + quiz + booksBlock + school + reviews + collab + support;
-  }
-
-  function railNav(target) {
-    return '<div class="rail-nav"><button type="button" data-action="rail" data-dir="-1" data-target="' + target + '" aria-label="Прокрутить назад">' + icon('i-chevron-left') + '</button><button type="button" data-action="rail" data-dir="1" data-target="' + target + '" aria-label="Прокрутить вперёд">' + icon('i-chevron') + '</button></div>';
-  }
-  function perk(ic, t, s) { return '<div class="perk"><span class="perk__ic">' + icon(ic) + '</span><div><b>' + t + '</b><span>' + s + '</span></div></div>'; }
-  function catTile(cat, cls, src, text, n) {
-    return '<a class="cat ' + cls + '" href="' + U.catalog(cat) + '">' + imgTag(src, '') +
-      '<span class="cat__count">' + n + ' ' + plural(n, 'товар', 'товара', 'товаров') + '</span><span class="cat__go" aria-hidden="true">' + icon('i-arrow') + '</span>' +
-      '<h3>' + CATS[cat].title + '</h3><p>' + text + '</p></a>';
   }
   function promo(p, cls, title, text, src) {
     return '<article class="promo ' + cls + '"><div class="promo__text">' +
       '<span class="promo__limit">' + icon('i-gift') + ' Всего 100 наборов</span>' +
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
-      '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b><s>' + money(p.old) + '</s></div>' +
+      '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn--sm" data-action="add" data-id="' + p.id + '">В корзину</button><a class="btn btn--sm btn--ghost" href="' + U.product(p.id) + '">Подробнее</a></div></div>' +
       '</div><div class="promo__img">' + imgTag(src, '') + '</div></article>';
   }
-  function hitsSet(set) {
-    var lists = {
-      hits: ['Маска для волос PILULYA PROFESSIONAL', 'Шампунь для волос PILULYA PROFESSIONAL', 'MOLECULAR LIPID', 'Лосьон-концентрат', 'Маска липидная', 'Биоэликсир', 'Термозащитный разглаживающий', 'Amino 20 в 1', 'Лосьон для роста волос'],
-      pro: ['Церамиды', 'Гиалуроновая кислота', 'Кератин гидролизованный', 'BADD', 'CUTISSENTIAL', 'Протеины шелка', 'Д-пантенол', 'БАЗОВАЯ МАСКА', 'Аргинин']
-    };
-    var items = set === 'new' ? PRODUCTS.filter(function (p) { return p.mark === 'NEW'; }).slice(0, 10) : pick(lists[set]);
-    return items.map(function (p) { return card(p); }).join('');
+
+  function noveltySection() {
+    var f = find('MOLECULAR LIPID');
+    if (!f) return '';
+    var pts = ['Плотные, гладкие и эластичные волосы', 'Меньше ломкости при расчёсывании', 'Меньше пушения', 'Зеркальный блеск и шёлковый финиш'];
+    return '<section class="section"><div class="wrap"><div class="novelty">' +
+      '<a class="novelty__img" href="' + U.product(f.id) + '" aria-label="' + esc(f.title) + '">' + imgTag('assets/img/filler.webp', 'Филлер PILULYA Molecular Lipid, 150 мл') + '<span class="mark">New</span></a>' +
+      '<div class="novelty__text"><p class="eyebrow">Новинка · уже в продаже</p>' +
+        '<h2 class="h2">Интеллектуальный филлер-реконструктор <span class="brand">PILULYA</span> <em>Molecular Lipid</em></h2>' +
+        '<p class="lead">Уход нового поколения для волос после окрашивания, осветления и термоукладок. Эффект молекулярной реконструкции за 15 минут.</p>' +
+        '<ul class="novelty__list">' + pts.map(function (t) { return '<li>' + icon('i-check') + '<span>' + t + '</span></li>'; }).join('') + '</ul>' +
+        '<div class="novelty__foot"><div class="price"><b>' + money(f.price) + '</b><span class="muted">150 мл</span></div>' +
+          '<div class="novelty__actions"><button type="button" class="btn" data-magnetic data-action="add" data-id="' + f.id + '">В корзину ' + icon('i-bag') + '</button><a class="btn btn--ghost" href="' + U.product(f.id) + '">Подробнее</a></div></div>' +
+      '</div></div></div></section>';
   }
 
-  /* ---------- Каталог ---------- */
-  function catalogView(cat) {
-    if (catState.cat !== cat) catState = { cat: cat, sub: '', q: catState.pendingQ || '', sort: 'pop' };
-    var info = CATS[cat];
-    var all = PRODUCTS.filter(function (p) { return inCat(p, cat); });
-    var subs = [];
-    all.forEach(function (p) { subsOf(p, cat).forEach(function (s) { if (subs.indexOf(s) === -1) subs.push(s); }); });
+  function tilesSection() {
     var box = find('ТРИТМЕНТОЛОГА');
+    return '<section class="section section--tight"><div class="wrap"><div class="cats cats--2">' +
+      tile('pilulya', 'Уход домашний', 'assets/img/growth.webp', 'Серия с феромонами, Cloud of Love, уход для роста волос, мисты и кремы PILULYA.') +
+      tile('badi', 'Бады', box ? img(box, 0) : 'assets/img/trio.webp', 'Активы с INCI, вводом и pH для создания своей косметики для волос.') +
+      '</div></div></section>';
+  }
+  function tile(key, title, src, text) {
+    var n = countIn(key);
+    return '<a class="cat" href="' + U.section(key) + '">' + imgTag(src, '') +
+      '<span class="cat__count">' + n + ' ' + plural(n, 'товар', 'товара', 'товаров') + '</span><span class="cat__go" aria-hidden="true">' + icon('i-arrow') + '</span>' +
+      '<h3>' + title + '</h3><p>' + text + '</p><span class="cat__more">Подробнее ' + icon('i-arrow', 'i--xs') + '</span></a>';
+  }
 
-    var tabs = CAT_ORDER.map(function (c) {
-      var n = PRODUCTS.filter(function (p) { return inCat(p, c); }).length;
-      return '<a class="chip' + (c === cat ? ' is-active' : '') + '" href="' + U.catalog(c) + '">' + CATS[c].title + ' <span class="count">' + n + '</span></a>';
-    }).join('');
-    function opt(v, t) { return '<option value="' + v + '"' + (catState.sort === v ? ' selected' : '') + '>' + t + '</option>'; }
+  function shipBanner(withNote, noLink) {
+    return '<section class="section section--tight"><div class="wrap"><div class="ship-banner">' +
+      '<span class="ship-banner__ic">' + icon('i-truck') + '</span>' +
+      '<div class="ship-banner__text"><p class="eyebrow">Доставка СДЭК по России</p><h2 class="h2">Бесплатная доставка от&nbsp;<em>4&nbsp;500&nbsp;₽</em></h2><p>В пункт выдачи или курьером. Отправляем заказы три раза в неделю.</p></div>' +
+      (noLink ? '' : '<a class="btn btn--rose" href="' + U.page('payment') + '">Условия доставки ' + icon('i-arrow') + '</a>') +
+      '</div>' + (withNote ? eNote() : '') + '</div></section>';
+  }
 
-    return '<section class="page-head"><div class="wrap">' +
-      '<nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') + '<span>' + info.title + '</span></nav>' +
-      '<div class="page-head__row"><div><h1 class="h2">' + info.title + '</h1><p class="lead">' + info.lead + '</p></div></div>' +
-      '<div class="cat-tabs">' + tabs + '</div>' +
-      '</div></section>' +
-      '<div class="toolbar"><div class="wrap toolbar__in">' +
-        '<div class="toolbar__subs">' + (subs.length > 1 ? subChips(subs, all, cat) : '') + '</div>' +
-        '<div class="toolbar__right"><label class="mini-search">' + icon('i-search') + '<input type="search" id="cat-q" placeholder="Поиск в разделе" value="' + esc(catState.q) + '" aria-label="Поиск в разделе"></label>' +
-        '<select class="select" id="cat-sort" aria-label="Сортировка">' +
-          opt('pop', 'По популярности') + opt('cheap', 'Сначала дешевле') + opt('exp', 'Сначала дороже') + opt('az', 'По названию') +
-        '</select></div>' +
-      '</div></div>' +
-      '<section class="catalog-body"><div class="wrap">' +
-        (cat === 'rezept' ? '<div class="note">' + icon('i-mail') + '<span>Если в заказе только сборники и видеоуроки, выберите электронную доставку: ссылка придёт на почту, указанную при оформлении.</span></div>' : '') +
-        (cat === 'badi' && box ? '<div class="note">' + icon('i-flask') + '<span>Не знаете, с чего начать? Посмотрите <a href="' + U.product(box.id) + '" style="text-decoration:underline">Бокс тритментолога</a>: три набора активов для создания профессионального ухода.</span></div>' : '') +
-        '<div data-results></div>' +
+  function quizSection() {
+    return '<section class="section section--tight"><div class="wrap"><div class="quiz-cta">' + fox('quiz-cta__fox') +
+      '<div class="quiz-cta__text"><p class="eyebrow">Протокол ухода</p><h2 class="h2">Пройдите тест и&nbsp;получите протокол ухода</h2><p class="lead">Ответьте на три вопроса о волосах, а мы соберём персональный протокол из средств PILULYA и активов.</p><button type="button" class="btn" data-magnetic data-action="open-quiz">Пройти тест ' + icon('i-arrow') + '</button></div>' +
+      '<div class="quiz-cta__steps"><div><b>1</b>Какие у вас волосы</div><div><b>2</b>Где вы за ними ухаживаете</div><div><b>3</b>Какой результат нужен</div></div>' +
+      '</div></div></section>';
+  }
+
+  function collabSection() {
+    return '<section class="section section--tight"><div class="wrap"><div class="collab">' +
+      '<div class="collab__img">' + imgTag('assets/img/pool.webp', 'Косметика PILULYA у бассейна') + '</div>' +
+      '<div class="collab__text"><p class="eyebrow">Для блогеров</p><h2 class="h2">Дарим косметику PILULYA за&nbsp;честный отзыв</h2>' +
+        '<p class="lead">Ведёте Telegram-канал или блог ВКонтакте от 500 подписчиков? Оставьте заявку, мы пришлём косметику и обсудим детали.</p>' +
+        formHtml('collab', true) + '</div>' +
+      '</div></div></section>';
+  }
+
+  function reviewsSection() {
+    return '<section class="section section--tight reviews"><div class="wrap">' +
+      '<div class="section-head"><div><p class="eyebrow">Отзывы мастеров</p><h2 class="h2">Нам доверяют колористы и&nbsp;салоны</h2></div>' +
+      '<div class="head-tools"><button type="button" class="btn btn--ghost btn--sm" data-action="jump" data-target="review-form">Оставить отзыв</button>' + railNav('rev-rail') + '</div></div>' +
+      '<div class="rail" id="rev-rail">' + REVIEWS.map(function (r) {
+        var ini = r.n.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2);
+        return '<figure class="review" style="margin:0"><div class="review__stars" role="img" aria-label="Оценка 5 из 5">' + icon('i-star') + icon('i-star') + icon('i-star') + icon('i-star') + icon('i-star') + '</div><blockquote>' + esc(r.t) + '</blockquote><figcaption class="review__who"><span class="avatar" aria-hidden="true">' + esc(ini) + '</span><div><b>' + esc(r.n) + '</b><span>' + esc(r.r) + '</span></div></figcaption></figure>';
+      }).join('') + '</div></div></section>';
+  }
+  function reviewFormSection() {
+    return '<section class="section section--tight" id="review-form"><div class="wrap"><div class="lead-block">' +
+      '<div class="lead-block__text"><p class="eyebrow">Ваш отзыв</p><h2 class="h2">Нам будет приятно, если вы напишете отзыв</h2>' +
+        '<p class="lead">Расскажите, какие средства вы пробовали и какой получили результат. Фото до и после можно прислать в Telegram ' + TG_SUPPORT + '.</p></div>' +
+      formHtml('review') + '</div></div></section>';
+  }
+
+  /* ---------- Разделы каталога: полки как на страницах Tilda, по 3 товара в ряд ---------- */
+  function sectionView(key) {
+    var s = SECTIONS[key];
+    var shelves = s.shelves.map(function (sh) { return { title: sh[0], id: sh[1], list: shelfItems(sh[1]) }; }).filter(function (sh) { return sh.list.length; });
+    var jump = shelves.length > 1 ? '<div class="cat-tabs" aria-label="Разделы страницы">' + shelves.map(function (sh) {
+      return '<button type="button" class="chip" data-action="jump" data-target="shelf-' + sh.id + '">' + esc(sh.title) + ' <span class="count">' + sh.list.length + '</span></button>';
+    }).join('') + '</div>' : '';
+    var box = find('ТРИТМЕНТОЛОГА');
+    var note = key === 'rezept' ? eNote()
+      : key === 'badi' && box ? '<div class="note">' + icon('i-flask') + '<span>Не знаете, с чего начать? Посмотрите <a href="' + U.product(box.id) + '" style="text-decoration:underline">Бокс тритментолога</a>: три набора активов для создания профессионального ухода.</span></div>' : '';
+    return pageHead(s.title, s.lead, jump) +
+      '<section class="catalog-body"><div class="wrap">' + note +
+      (shelves.length ? shelves.map(function (sh) {
+        return '<section class="shelf" id="shelf-' + sh.id + '" aria-label="' + esc(sh.title || s.title) + '">' +
+          (sh.title && shelves.length > 1 ? '<div class="shelf__head"><h2 class="h3">' + esc(sh.title) + '</h2><span class="muted">' + sh.list.length + ' ' + plural(sh.list.length, 'товар', 'товара', 'товаров') + '</span></div>' : '') +
+          '<div class="grid grid--3">' + sh.list.map(function (p) { return card(p, ''); }).join('') + '</div></section>';
+      }).join('') : '<div class="empty">' + fox() + '<h3 class="h3">Скоро здесь появятся товары</h3><p>Раздел обновляется. Загляните позже или напишите нам в Telegram ' + TG_SUPPORT + '.</p></div>') +
       '</div></section>';
   }
-  function subChips(subs, all, cat) {
-    return '<button type="button" class="chip' + (!catState.sub ? ' is-active' : '') + '" data-action="sub" data-sub="">Все <span class="count">' + all.length + '</span></button>' +
-      subs.map(function (s) {
-        var n = all.filter(function (p) { return subsOf(p, cat).indexOf(s) !== -1; }).length;
-        return '<button type="button" class="chip' + (catState.sub === s ? ' is-active' : '') + '" data-action="sub" data-sub="' + esc(s) + '">' + esc(s) + ' <span class="count">' + n + '</span></button>';
-      }).join('');
+
+  /* ---------- Акции: как на старой странице akzia ---------- */
+  function akziaView() {
+    return pageHead('Акции', SALE_LEAD) + kitSection() + promosSection(false) + shipBanner(false) + reviewFormSection();
   }
-  function catalogResults() {
-    var box = $('[data-results]');
-    if (!box) return;
-    var cat = catState.cat;
-    var q = norm(catState.q).trim();
-    var list = PRODUCTS.filter(function (p) {
-      if (!inCat(p, cat)) return false;
-      if (catState.sub && subsOf(p, cat).indexOf(catState.sub) === -1) return false;
-      if (q && norm(p.title + ' ' + p.short + ' ' + p.sub).indexOf(q) === -1) return false;
+
+  /* ---------- Техподдержка (на каждой странице) ---------- */
+  function supportView() {
+    var max = MAX_URL
+      ? '<a class="btn btn--outline-light" href="' + esc(MAX_URL) + '" target="_blank" rel="noopener">Техподдержка MAX</a>'
+      : '<button type="button" class="btn btn--outline-light" data-action="max">Техподдержка MAX</button>';
+    return '<section class="section section--tight support-band" id="support"><div class="wrap"><div class="lead-block lead-block--dark">' +
+      '<div class="lead-block__text"><p class="eyebrow">Техподдержка</p><h2 class="h2">Добрый день! Техподдержка LisinaShop на&nbsp;связи</h2>' +
+        '<p class="lead">Задайте вопрос о заказе, доставке или подборе ухода. Ответим в мессенджере или перезвоним.</p>' +
+        '<div class="support-band__btns"><a class="btn btn--rose" href="https://t.me/piiilulya" target="_blank" rel="noopener">' + icon('i-send') + ' Техподдержка Telegram</a>' + max + '</div>' +
+        '<a class="support-band__phone" href="tel:+79275103030">' + icon('i-phone') + '+7 (927) 510-30-30</a></div>' +
+      formHtml('support', true) + '</div></div></section>';
+  }
+
+  /* ---------- Формы: блогеры, отзыв, вопрос в техподдержку ---------- */
+  // [поле, подпись, тип, обязательное, autocomplete, подсказка]
+  var FORMS = {
+    collab: { title: 'Заявка блогера', btn: 'Отправить заявку', ok: 'Заявка принята! Мы напишем вам в течение двух рабочих дней.', fields: [
+      ['name', 'Имя', 'text', true, 'given-name', 'Как к вам обращаться'], ['surname', 'Фамилия', 'text', false, 'family-name', ''],
+      ['email', 'E-mail', 'email', false, 'email', 'name@mail.ru'], ['phone', 'Телефон', 'tel', true, 'tel', '+7 (900) 000-00-00'],
+      ['tg', 'Телеграм', 'text', false, '', '@username или t.me/…'], ['vk', 'ВК', 'text', false, '', 'vk.com/…']] },
+    review: { title: 'Отзыв', btn: 'Отправить отзыв', ok: 'Спасибо за отзыв! Нам очень приятно.', fields: [
+      ['name', 'Имя', 'text', true, 'name', 'Как вас зовут'], ['about', 'Город и профессия', 'text', false, '', 'Например: колорист, Казань'],
+      ['text', 'Отзыв', 'textarea', true, '', 'Какие средства пробовали и какой получили результат'], ['contact', 'Телефон или e-mail', 'text', false, '', 'Чтобы мы могли уточнить детали']] },
+    support: { title: 'Вопрос в техподдержку', btn: 'Отправить вопрос', ok: 'Вопрос отправлен! Ответим как можно скорее.', fields: [
+      ['name', 'Имя', 'text', true, 'name', 'Как к вам обращаться'], ['phone', 'Телефон', 'tel', true, 'tel', '+7 (900) 000-00-00'],
+      ['text', 'Ваш вопрос', 'textarea', true, '', 'Например: когда отправят мой заказ?']] }
+  };
+  function formHtml(kind, dark) {
+    var def = FORMS[kind];
+    var cls = 'input' + (dark ? ' input--dark' : '');
+    function field(x) {
+      var id = 'f-' + kind + '-' + x[0];
+      var attrs = ' id="' + id + '" name="' + x[0] + '"' + (x[3] ? ' required' : '') + (x[4] ? ' autocomplete="' + x[4] + '"' : '') + (x[5] ? ' placeholder="' + esc(x[5]) + '"' : '');
+      var ctl = x[2] === 'textarea' ? '<textarea class="' + cls + '"' + attrs + ' maxlength="3000"></textarea>' : '<input class="' + cls + '" type="' + x[2] + '"' + attrs + ' maxlength="200">';
+      return '<div class="field"><label for="' + id + '">' + x[1] + (x[3] ? '' : ' <span class="field__opt">необязательно</span>') + '</label>' + ctl + '</div>';
+    }
+    var short = def.fields.filter(function (x) { return x[2] !== 'textarea'; });
+    var rows = '';
+    for (var i = 0; i < short.length; i += 2) rows += short[i + 1] ? '<div class="form__row">' + field(short[i]) + field(short[i + 1]) + '</div>' : field(short[i]);
+    return '<form class="form lead-form" data-form="lead" data-kind="' + kind + '" novalidate>' + rows +
+      def.fields.filter(function (x) { return x[2] === 'textarea'; }).map(field).join('') +
+      '<label class="check"><input type="checkbox" name="agree" required><span>Даю согласие на <a href="' + U.page('politika') + '" target="_blank" rel="noopener">обработку персональных данных</a></span></label>' +
+      '<button class="btn' + (dark ? ' btn--rose' : '') + '" type="submit">' + def.btn + '</button></form>';
+  }
+  function submitLead(f) {
+    var kind = f.getAttribute('data-kind'), def = FORMS[kind], vals = {};
+    def.fields.forEach(function (x) { var el = f.elements[x[0]]; vals[x[0]] = el ? el.value.trim() : ''; });
+    var btn = $('[type="submit"]', f);
+    if (btn) btn.disabled = true;
+    function done(demo) {
+      f.outerHTML = '<div class="form-success" role="status">' + icon('i-check') + '<span>' + def.ok + (demo ? ' (Демоверсия: сообщение никуда не отправлено.)' : '') + '</span></div>';
+    }
+    function fail(html) {
+      if (btn) btn.disabled = false;
+      var box = $('.form-err', f);
+      if (!box) { box = document.createElement('p'); box.className = 'field__err form-err'; f.appendChild(box); }
+      box.innerHTML = html;
+    }
+    if (TILDA) {
+      tildaLead(kind, vals).then(function () { done(false); }, function (e) {
+        fail((e && e.message === 'noform' ? 'Форма временно недоступна.' : 'Не удалось отправить, попробуйте ещё раз.') + ' Можно написать нам в Telegram ' + TG_SUPPORT + '.');
+      });
+    } else if (DEMO) {
+      done(true);
+    } else {
+      apiCall('POST', '/leads', { type: kind, fields: vals, consent: true }).then(function () { done(false); }).catch(function (e) { fail(esc(friendly(e))); });
+    }
+  }
+
+  /* Режим Tilda: наши формы отправляются через скрытую форму Tilda на этой же странице
+     (блок формы с полями «Имя», «Email» и «Текст»: заявки уходят туда же, куда и раньше — на почту и в Telegram) */
+  function tildaForm() {
+    var list = $all('form.js-form-proccess, form.t-form');
+    for (var i = 0; i < list.length; i++) {
+      if (!list[i].closest('.t706') && !list[i].closest('#ls-root')) return list[i];
+    }
+    return null;
+  }
+  function tildaLead(kind, vals) {
+    return new Promise(function (resolve, reject) {
+      var f = tildaForm();
+      if (!f) { reject(new Error('noform')); return; }
+      var def = FORMS[kind];
+      var text = def.title + '\n' + def.fields.map(function (x) { return vals[x[0]] ? x[1] + ': ' + vals[x[0]] : ''; }).filter(Boolean).join('\n') + '\nСтраница: ' + location.href;
+      function put(el, v) {
+        if (!el) return;
+        el.value = v;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      var email = vals.email || (/@/.test(vals.contact || '') ? vals.contact : '');
+      put(f.querySelector('.t-input-group_ta textarea') || f.querySelector('textarea'), text);
+      put(f.querySelector('.t-input-group_nm input') || f.querySelector('input[name="Name"]'), vals.name || '');
+      put(f.querySelector('.t-input-group_em input') || f.querySelector('input[name="Email"]'), email);
+      var phone = f.querySelector('.t-input-group_ph input[type="tel"]:not(.t-input-phonemask)');
+      if (phone && (vals.phone || '').replace(/\D/g, '').length >= 10) put(phone, vals.phone);
+      var ok = f.querySelector('.js-successbox'), err = f.querySelector('.js-errorbox-all'), inputs = f.querySelector('.t-form__inputsbox');
+      if (ok) ok.style.display = 'none';
+      if (inputs) inputs.style.display = '';
+      if (err) err.style.display = 'none';
+      var t0 = Date.now(), finished = false, timer;
+      function shown(el) { return el && getComputedStyle(el).display !== 'none' && el.textContent.trim(); }
+      function finish(good) {
+        if (finished) return;
+        finished = true;
+        clearInterval(timer);
+        f.removeEventListener('tildaform:aftersuccess', onOk);
+        if (good) resolve(); else reject(new Error('tilda'));
+      }
+      function onOk() { finish(true); }
+      f.addEventListener('tildaform:aftersuccess', onOk);
+      timer = setInterval(function () {
+        if (shown(ok) || f.classList.contains('js-send-form-success')) finish(true);
+        else if (shown(err) || Date.now() - t0 > 20000) finish(false);
+      }, 250);
+      var b = f.querySelector('[type="submit"]') || f.querySelector('.t-submit');
+      if (b) b.click(); else if (f.requestSubmit) f.requestSubmit(); else finish(false);
+    });
+  }
+
+  /* ---------- Плавающее меню контактов ---------- */
+  function toggleFab(open) {
+    var fab = $('#fab');
+    var on = open == null ? !fab.classList.contains('is-open') : open;
+    fab.classList.toggle('is-open', on);
+    $('#fab-menu').hidden = !on;
+    $('.fab__btn', fab).setAttribute('aria-expanded', on);
+  }
+  function openMax() {
+    toggleFab(false);
+    if (MAX_URL) { window.open(MAX_URL, '_blank', 'noopener'); return; }
+    function go() {
+      var s = $('#support');
+      if (!s) return false;
+      scrollToEl(s);
+      var i = $('input, textarea', s);
+      if (i) setTimeout(function () { i.focus({ preventScroll: true }); }, 600);
       return true;
-    });
-    var s = catState.sort;
-    list.sort(function (a, b) {
-      if (s === 'cheap') return minPrice(a) - minPrice(b);
-      if (s === 'exp') return minPrice(b) - minPrice(a);
-      if (s === 'az') return a.title.localeCompare(b.title, 'ru');
-      return a.order - b.order;
-    });
-    box.innerHTML = list.length
-      ? '<p class="result-count">' + list.length + ' ' + plural(list.length, 'товар', 'товара', 'товаров') + (q ? ' по запросу «' + esc(catState.q) + '»' : '') + '</p><div class="grid grid--pop">' + list.map(function (p) { return card(p, cat); }).join('') + '</div>'
-      : '<div class="empty">' + fox() + '<h3 class="h3">Ничего не нашлось</h3><p>Попробуйте изменить запрос или выбрать другой раздел каталога.</p><button type="button" class="btn btn--ghost" data-action="reset-filters">Сбросить фильтры</button></div>';
+    }
+    if (productOpen) { closeProduct(); setTimeout(go, 400); return; }
+    if (!go()) { navigate(U.page('contakt')); setTimeout(go, 700); }
   }
 
   /* ---------- Товар ---------- */
   function productView(p) {
     pdpOpt = 0;
     var spec = specOf(p);
-    var ctxCat = p.in[0][0];
+    var cur = route();
+    var sec = cur.name === 'product' && SECTIONS[cur.page] ? cur.page : MAIN[p.cat] || 'pilulya_prof';
     var thumbs = p.images.length > 1 ? '<div class="gallery__thumbs">' + p.images.map(function (src, i) {
       return '<button type="button" class="' + (i === 0 ? 'is-active' : '') + '" data-action="thumb" data-src="' + esc(src) + '" aria-label="Фото ' + (i + 1) + '">' + imgTag(src, '') + '</button>';
     }).join('') + '</div>' : '';
@@ -576,15 +753,16 @@
     if (spec.ph) specs.push('<div><span>pH</span><b>' + esc(spec.ph) + '</b></div>');
     if (isDigital(p)) specs.push('<div><span>Формат</span><b>Электронный, PDF</b></div><div><span>Доставка</span><b>На e-mail после оплаты</b></div>');
 
-    var related = PRODUCTS.filter(function (x) { return x.id !== p.id && x.sub === p.sub; }).slice(0, 8);
+    // «С этим товаром также покупают»: соседи по полке на странице Tilda, затем товары того же раздела
+    var shelf = [];
+    Object.keys(PARTS).some(function (k) { if (PARTS[k].indexOf(p.id) !== -1) { shelf = PARTS[k]; return true; } return false; });
+    var related = shelf.filter(function (id) { return id !== p.id && byId[id]; }).map(function (id) { return byId[id]; }).slice(0, 8);
     if (related.length < 4) related = related.concat(PRODUCTS.filter(function (x) { return x.id !== p.id && x.cat === p.cat && related.indexOf(x) === -1; }).slice(0, 8 - related.length));
 
-    return '<section class="page-head"><div class="wrap"><nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') +
-      '<a href="' + U.catalog(ctxCat) + '">' + CATS[ctxCat].title + '</a>' + icon('i-chevron') + '<span>' + esc(p.sub) + '</span></nav></div></section>' +
-      '<div class="wrap pdp">' +
+    return '<div class="wrap pdp">' +
         '<div class="gallery' + (thumbs ? '' : ' gallery--single') + '">' + thumbs + '<div class="gallery__main" data-main>' + imgTag(img(p, 0), p.title) + marks(p) + '</div></div>' +
         '<div class="pdp__info">' +
-          '<div style="display:grid;gap:12px"><span class="eyebrow">' + esc(p.sub) + '</span><h1 class="pdp__title">' + esc(p.title) + '</h1></div>' +
+          '<div style="display:grid;gap:12px"><nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') + '<a href="' + U.section(sec) + '">' + SECTIONS[sec].title + '</a></nav><h1 class="pdp__title">' + esc(p.title) + '</h1></div>' +
           '<div class="pdp__price" data-pdp-price>' + pdpPrice(p, 0) + '</div>' +
           (p.short && p.cat !== 'badi' ? '<p class="pdp__short">' + esc(p.short) + '</p>' : '') +
           (p.opts ? '<div class="opts"><span class="opts__label">' + esc(p.opts.title) + '</span><div class="opts__list">' + p.opts.values.map(function (v, i) {
@@ -600,10 +778,10 @@
             '<div>' + icon('i-chat') + 'Поможем с выбором в Telegram: @piiilulya</div>' +
           '</div>' +
           '<div class="acc"><details open><summary>Описание и применение ' + icon('i-plus') + '</summary><div class="prose">' + (p.html || esc(p.short)) + '</div></details>' +
-          '<details><summary>Доставка и оплата ' + icon('i-plus') + '</summary><div class="prose">Отправляем заказы через СДЭК в пункт выдачи или курьером. При заказе от 4 500 ₽ доставка бесплатная. Электронные сборники и видеоуроки приходят на e-mail, указанный при оформлении. <a href="' + U.page('delivery') + '" style="text-decoration:underline">Подробнее</a></div></details></div>' +
+          '<details><summary>Доставка и оплата ' + icon('i-plus') + '</summary><div class="prose">Отправляем заказы через СДЭК в пункт выдачи или курьером. При заказе от 4 500 ₽ доставка бесплатная. Электронные сборники и видеоуроки приходят на e-mail, указанный при оформлении. <a href="' + U.page('payment') + '" style="text-decoration:underline">Подробнее</a></div></details></div>' +
         '</div>' +
       '</div>' +
-      (related.length ? '<section class="section section--tight" style="border-top:1px solid var(--line)"><div class="wrap"><div class="section-head"><div><p class="eyebrow">Рекомендуем</p><h2 class="h2">С этим товаром покупают</h2></div>' +
+      (related.length ? '<section class="section section--tight pdp__related"><div class="wrap"><div class="section-head"><div><p class="eyebrow">Рекомендуем</p><h2 class="h2">С этим товаром также покупают</h2></div>' +
         '<div class="head-tools">' + railNav('rel-rail') + '</div></div>' +
         '<div class="rail" id="rel-rail">' + related.map(function (x) { return card(x); }).join('') + '</div></div></section>' : '');
   }
@@ -1052,28 +1230,27 @@
 
   /* ---------- Информационные страницы ---------- */
   function pageView(slug) {
-    if (slug === 'contacts') return contactsView();
-    var pg = PAGES[slug];
+    var pg = PAGES[INFO[slug]];
     if (!pg) return notFoundView();
-    var head = '<section class="page-head"><div class="wrap">' + crumbs(esc(pg.title)) + '<h1 class="h2">' + esc(pg.title) + '</h1>' +
-      (slug === 'delivery' ? '<p class="lead">Отправляем заказы по России через СДЭК. Электронные товары приходят на почту сразу после оплаты.</p>' : '') + '</div></section>';
-    var cards = slug === 'delivery' ? '<div class="wrap"><div class="info-grid">' +
+    var pay = slug === 'payment';
+    var head = pageHead(pg.title, pay ? 'Отправляем заказы по России через СДЭК. Электронные товары приходят на почту сразу после оплаты.' : '');
+    var cards = pay ? shipBanner(false, true) + '<div class="wrap"><div class="info-grid">' +
       '<div class="info-card"><span class="perk__ic">' + icon('i-truck') + '</span><h3>СДЭК по России</h3><p>Доставка в пункт выдачи или курьером. При заказе от 4 500 ₽ доставка бесплатная, при меньшей сумме стоимость рассчитывается при оформлении.</p></div>' +
       '<div class="info-card"><span class="perk__ic">' + icon('i-mail') + '</span><h3>Электронные товары</h3><p>Сборники и видеоуроки приходят ссылкой на e-mail, указанный при заказе. Доставка для них не нужна.</p></div>' +
       '<div class="info-card"><span class="perk__ic">' + icon('i-shield') + '</span><h3>Оплата онлайн</h3><p>Картой, через ЮMoney или с телефона. Платёж проходит на защищённой странице ЮKassa, чек придёт на почту.</p></div>' +
       '</div></div>' : '';
-    var foot = slug === 'delivery' ? '<p class="muted" style="margin-top:32px">Условия возврата и обмена: <a href="' + U.page('garant') + '" style="text-decoration:underline">Гарантия и возврат</a>.</p>' : '';
+    var foot = pay ? '<p class="muted" style="margin-top:32px">Условия возврата и обмена: <a href="' + U.page('garant') + '" style="text-decoration:underline">Гарантия и возврат</a>.</p>' : '';
     return head + cards + '<div class="wrap" style="padding-bottom:clamp(56px,7vw,96px)"><article class="legal prose">' + pg.html + foot + '</article></div>';
   }
   function contactsView() {
-    return '<section class="page-head"><div class="wrap">' + crumbs('Контакты') + '<h1 class="h2">Контакты</h1><p class="lead">Поможем подобрать уход, рассчитать формулу или отследить заказ.</p></div></section>' +
-      '<div class="wrap"><div class="support">' +
+    return pageHead('Контакты', 'Поможем подобрать уход, рассчитать формулу или отследить заказ.') +
+      '<div class="wrap"><div class="support support--4">' +
         '<a class="support__item" href="tel:+79275103030"><span class="perk__ic">' + icon('i-phone') + '</span><div><b>+7 (927) 510-30-30</b><span>Звонок по России</span></div></a>' +
         '<a class="support__item" href="mailto:info@lisinashop.ru"><span class="perk__ic">' + icon('i-mail') + '</span><div><b>info@lisinashop.ru</b><span>Для заказов и предложений</span></div></a>' +
         '<a class="support__item" href="https://t.me/piiilulya" target="_blank" rel="noopener"><span class="perk__ic">' + icon('i-send') + '</span><div><b>Техподдержка в Telegram</b><span>@piiilulya</span></div></a>' +
         '<a class="support__item" href="https://t.me/lisinashopGroop" target="_blank" rel="noopener"><span class="perk__ic">' + icon('i-chat') + '</span><div><b>Telegram-канал</b><span>@lisinashopGroop</span></div></a>' +
       '</div>' +
-      '<div class="panel" style="margin-block:24px clamp(56px,7vw,96px)"><h2 class="panel__title">Реквизиты</h2><div class="prose" style="padding:0">ООО «ЛИСИНА»<br>ИНН 3460085337<br>ОГРН 1233400011833<br><br>Самовывоз заказов возможен в городе ' + esc(shop.pickupCity) + ': договоритесь с менеджером после оформления заказа.</div></div></div>';
+      '<div class="panel" style="margin-top:24px"><h2 class="panel__title">Реквизиты</h2><div class="prose" style="padding:0">ООО «ЛИСИНА»<br>ИНН 3460085337<br>ОГРН 1233400011833<br><br>Самовывоз заказов возможен в городе ' + esc(shop.pickupCity) + ': договоритесь с менеджером после оформления заказа.</div></div></div>';
   }
   function notFoundView() {
     return '<div class="wrap"><div class="empty" style="padding-block:120px">' + fox() + '<h1 class="h2">Страница не найдена</h1><p>Возможно, ссылка устарела. Начните с каталога или главной страницы.</p><div class="hero__actions" style="justify-content:center"><a class="btn" href="' + U.catalog() + '">Перейти в каталог</a><a class="btn btn--ghost" href="' + U.home() + '">На главную</a></div></div></div>';
@@ -1150,9 +1327,9 @@
     var list = PRODUCTS.filter(function (p) { return norm(p.title + ' ' + p.short + ' ' + p.sub).indexOf(nq) !== -1; });
     var re = new RegExp('(' + esc(q.trim()).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
     box.innerHTML = list.length
-      ? list.slice(0, 8).map(function (p) {
+      ? list.slice(0, 40).map(function (p) {
           return '<a class="s-item" href="' + U.product(p.id) + '" data-action="close">' + imgTag(img(p, 0), '') + '<div><b>' + esc(p.title).replace(re, '<mark>$1</mark>') + '</b><span>' + esc(p.sub) + '</span></div><span class="s-item__p">' + money(minPrice(p)) + '</span></a>';
-        }).join('') + (list.length > 8 ? '<div class="search__all">' + textBtn('search-all', 'Показать все результаты (' + list.length + ') ' + icon('i-arrow')) + '</div>' : '')
+        }).join('') + (list.length > 40 ? '<p class="search__empty">Показаны первые 40 из ' + list.length + '. Уточните запрос.</p>' : '')
       : '<p class="search__empty">По запросу «' + esc(q) + '» ничего не нашлось. Попробуйте «маска» или «масло».</p>';
   }
 
@@ -1171,8 +1348,8 @@
   function closeAll(silent) {
     var any = false;
     ['menu', 'cart', 'search', 'quiz'].forEach(function (id) { var el = document.getElementById(id); if (!el.hidden) { el.hidden = true; any = true; } });
-    document.body.style.overflow = '';
-    if (lenis && booted) lenis.start();
+    document.body.style.overflow = productOpen ? 'hidden' : '';
+    if (lenis && booted && !productOpen) lenis.start();
     if (any && !silent && lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
@@ -1252,7 +1429,7 @@
   }
 
   /* Появление при прокрутке: только то, что ниже первого экрана */
-  var REVEAL = '.section-head, .cat, .kit__img, .kit__text > *, .promo, .rail > *, .grid:not(.grid--pop) > .card, .quiz-cta, .books__intro, .school, .collab, .support__item, .perk, .info-card, .panel, .marquee';
+  var REVEAL = '.section-head, .cat, .kit__img, .kit__text > *, .promo, .rail > *, .grid:not(.grid--pop) > .card, .shelf__head, .quiz-cta, .novelty__img, .novelty__text > *, .ship-banner, .collab, .lead-block, .support__item, .info-card, .panel';
   var io = (!REDUCED && 'IntersectionObserver' in window) ? new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (!e.isIntersecting) return;
@@ -1316,7 +1493,8 @@
 
   /* Прокрутка: шапка прячется вниз, фото hero уплывает, бегущая строка наклоняется */
   var lastY = 0, ticking = false, skew = 0, skewTimer;
-  function overlayOpen() { return ['cart', 'menu', 'search', 'quiz'].some(function (id) { return !document.getElementById(id).hidden; }); }
+  function layerOpen() { return ['cart', 'menu', 'search', 'quiz'].some(function (id) { return !document.getElementById(id).hidden; }); }
+  function overlayOpen() { return productOpen || layerOpen(); }
   function onScroll() {
     if (ticking) return;
     ticking = true;
@@ -1367,6 +1545,7 @@
     else if ((c = el.closest('.quiz__item, .upsell'))) src = c.querySelector('img');
     else if (el.closest('.buy')) src = $('[data-main] img');
     else if (el.closest('.kit')) src = $('.kit__img img');
+    else if (el.closest('.novelty')) src = $('.novelty__img img');
     else if ((c = el.closest('.promo'))) src = c.querySelector('.promo__img img');
     var target = $('.cart-btn');
     if (!src || !target || !src.animate) return;
@@ -1438,28 +1617,19 @@
         quizResult.forEach(function (p) { $all('[data-foot="' + p.id + '"]').forEach(function (f) { f.innerHTML = footInner(p); }); });
         renderCart(); openLayer('cart');
         break;
-      case 'hits': {
-        $all('[data-action="hits"]').forEach(function (b) { b.classList.toggle('is-active', b === el); b.setAttribute('aria-selected', b === el); });
-        var rail = $('#hits-rail'); rail.innerHTML = hitsSet(el.getAttribute('data-set')); rail.scrollLeft = 0;
-        break;
-      }
       case 'rail': {
         var r = document.getElementById(el.getAttribute('data-target'));
         if (r) r.scrollBy({ left: r.clientWidth * 0.85 * parseInt(el.getAttribute('data-dir'), 10), behavior: 'smooth' });
         break;
       }
-      case 'sub':
-        catState.sub = el.getAttribute('data-sub');
-        $all('[data-action="sub"]').forEach(function (b) { b.classList.toggle('is-active', b === el); });
-        catalogResults();
-        break;
-      case 'reset-filters': {
-        catState.sub = ''; catState.q = '';
-        var qi = $('#cat-q'); if (qi) qi.value = '';
-        $all('[data-action="sub"]').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-sub') === ''); });
-        catalogResults();
+      case 'jump': {
+        var t = document.getElementById(el.getAttribute('data-target'));
+        if (t) scrollToEl(t);
         break;
       }
+      case 'close-product': closeProduct(); break;
+      case 'fab': toggleFab(); break;
+      case 'max': openMax(); break;
       case 'thumb': {
         $all('.gallery__thumbs button').forEach(function (b) { b.classList.toggle('is-active', b === el); });
         var main = $('[data-main] img');
@@ -1482,21 +1652,22 @@
         break;
       }
       case 'pick-city': pickCity(el.getAttribute('data-code'), el.getAttribute('data-name')); break;
-      case 'search-all': {
-        catState = { cat: null, pendingQ: $('#search-input').value };
-        closeAll(true);
-        var cur = route();
-        if (cur.name === 'catalog' && cur.cat === 'all') render(true); else navigate(U.catalog());
-        break;
-      }
     }
   });
 
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if ($('#fab').classList.contains('is-open')) toggleFab(false);
+    else if (layerOpen()) closeAll();
+    else if (productOpen) closeProduct();
+  });
+  /* Меню контактов закрывается кликом в стороне */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && !e.target.closest('#fab') && $('#fab').classList.contains('is-open')) toggleFab(false);
+  });
 
   document.addEventListener('input', function (e) {
     if (e.target.id === 'search-input') renderSearch(e.target.value);
-    if (e.target.id === 'cat-q') { catState.q = e.target.value; catalogResults(); }
     if (e.target.hasAttribute && e.target.hasAttribute('data-city-input')) onCityInput(e.target);
     if (e.target.hasAttribute && e.target.hasAttribute('data-point-filter')) {
       checkoutState.pointFilter = e.target.value;
@@ -1507,7 +1678,6 @@
     }
   });
   document.addEventListener('change', function (e) {
-    if (e.target.id === 'cat-sort') { catState.sort = e.target.value; catalogResults(); }
     if (e.target.name === 'ship') {
       checkoutState.ship = e.target.value;
       checkoutState.point = null;
@@ -1550,18 +1720,8 @@
     });
     if (!ok) { var first = $('.is-error', f); if (first) first.focus(); return; }
     var kind = f.getAttribute('data-form');
-    if (kind === 'collab') {
-      var okMsg = function (demo) { f.outerHTML = '<div class="form-success">' + icon('i-check') + '<span>Заявка принята! Мы напишем вам в течение двух рабочих дней.' + (demo ? ' (Демоверсия: заявка не отправлена.)' : '') + '</span></div>'; };
-      if (DEMO) { okMsg(true); return; }
-      var btn = $('[type="submit"]', f);
-      if (btn) btn.disabled = true;
-      apiCall('POST', '/leads', { type: 'collab', name: $('#c-name').value.trim(), link: $('#c-link').value.trim(), consent: true })
-        .then(function () { okMsg(false); })
-        .catch(function (err) {
-          if (btn) btn.disabled = false;
-          var box = $('.field__err.form-err', f) || f.insertAdjacentElement('beforeend', Object.assign(document.createElement('p'), { className: 'field__err form-err' }));
-          box.textContent = friendly(err);
-        });
+    if (kind === 'lead') {
+      submitLead(f);
     } else if (kind === 'checkout') {
       submitCheckout(f);
     }
@@ -1589,33 +1749,53 @@
       app.classList.add('view-enter');
     }, 200);
   }
+  /* Окно товара открывается и закрывается без перерисовки страницы под ним */
+  var productDepth = 0, navPushed = false;
+  function onRouteChange() {
+    var r = route();
+    if (navPushed) productDepth = r.name === 'product' ? productDepth + 1 : 0;
+    else productDepth = r.name === 'product' ? Math.max(0, productDepth - 1) : 0;
+    navPushed = false;
+    var swap = r.name === 'product' ? !!renderedKey : productOpen && routeKey(r) === renderedKey;
+    if (swap) render(false); else transitionTo();
+  }
+  function closeProduct() {
+    if (productDepth > 0) { var n = productDepth; productDepth = 0; history.go(-n); return; }
+    var url = urlFor(renderedRoute || { name: 'home' });
+    if (HASH) { location.replace(url.charAt(0) === '#' ? url : '#/'); return; }
+    history.replaceState(null, '', url);
+    onRouteChange();
+  }
   function navigate(url) {
     if (HASH) {
       var target = url.charAt(0) === '#' ? url : '#/' + url.replace(/^\/+/, '');
-      if (target === location.hash || (target === '#/' && !location.hash)) { scrollTop(); return; }
+      if (target === location.hash || (target === '#/' && !location.hash)) { if (!productOpen) scrollTop(); return; }
+      navPushed = true;
       location.hash = target.slice(1); // дальше сработает hashchange
       return;
     }
     var u = new URL(url, location.href);
-    if (u.pathname === location.pathname && u.search === location.search) { scrollTop(); return; }
+    if (u.pathname === location.pathname && u.search === location.search) { if (!productOpen) scrollTop(); return; }
     history.pushState(null, '', u.pathname + u.search);
-    transitionTo();
+    navPushed = true;
+    onRouteChange();
   }
   if (HASH) {
     window.addEventListener('hashchange', function () {
       var h = location.hash;
-      if (!h || h === '#' || h.indexOf('#/') === 0) transitionTo();
+      if (!h || h === '#' || h.indexOf('#/') === 0) onRouteChange();
     });
     // свои ссылки #/… обрабатываем раньше скриптов Tilda: у неё свои обработчики якорей
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a[href^="#/"]');
-      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
       e.preventDefault();
       e.stopPropagation();
+      if (a.getAttribute('data-action') === 'close') closeAll(true);
       navigate(a.getAttribute('href'));
     }, true);
   } else {
-    window.addEventListener('popstate', transitionTo);
+    window.addEventListener('popstate', onRouteChange);
   }
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
