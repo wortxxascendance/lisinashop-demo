@@ -229,7 +229,7 @@
       if (INFO[rel]) return { name: 'page', slug: rel };
       // адреса прошлой версии витрины
       if (rel === 'pilulya_1') return { name: 'section', key: 'pilulya' }; // служебные страницы Tilda
-      if (rel === 'teaser2') return { name: 'section', key: 'badi' };
+      if (rel === 'teaser_1' || rel === 'teaser2') return { name: 'section', key: 'badi' };
       if (rel === 'catalog') return { name: 'section', key: 'pilulya_prof' };
       if (rel === 'delivery') return { name: 'page', slug: 'payment' };
       if (rel === 'contacts') return { name: 'contakt' };
