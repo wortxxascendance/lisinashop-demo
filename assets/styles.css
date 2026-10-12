@@ -1019,3 +1019,6 @@ html.lenis, html.lenis body { height: auto; }
   .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { .fab__btn::before { animation: none; display: none; } }
+
+/* Акции: фото набора вписано целиком */
+.promo__img--pack img { object-fit: contain; padding: clamp(12px, 1.6vw, 22px); mix-blend-mode: multiply; }

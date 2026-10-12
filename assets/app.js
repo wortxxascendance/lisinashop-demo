@@ -488,17 +488,18 @@
     return '<section class="section"><div class="wrap">' +
       '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div>' + (withLink ? '<a class="link-arrow" href="' + U.page('akzia') + '">Все акции ' + icon('i-arrow') + '</a>' : '') + '</div>' +
       '<div class="promos">' +
-        (set1 ? promo(set1, '', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.', 'assets/img/hero-wide.webp') : '') +
-        (set2 ? promo(set2, 'promo--alt', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.', 'assets/img/color-additives.webp') : '') +
+        (set1 ? promo(set1, '', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.', 'assets/img/promo-shampoo-mask.webp') : '') +
+        (set2 ? promo(set2, 'promo--alt', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.') : '') +
       '</div></div></section>';
   }
+  // фото набора целиком (все банки в кадре), без обрезки; src — то же фото с белым фоном, если у исходного фон серый
   function promo(p, cls, title, text, src) {
     return '<article class="promo ' + cls + '"><div class="promo__text">' +
       '<span class="promo__limit">' + icon('i-gift') + ' Всего 100 наборов</span>' +
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
       '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn--sm" data-action="add" data-id="' + p.id + '">В корзину</button><a class="btn btn--sm btn--ghost" href="' + U.product(p.id) + '">Подробнее</a></div></div>' +
-      '</div><div class="promo__img">' + imgTag(src, '') + '</div></article>';
+      '</div><div class="promo__img promo__img--pack">' + imgTag(src || img(p, 0), p.title) + '</div></article>';
   }
 
   function noveltySection() {
