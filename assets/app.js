@@ -198,7 +198,7 @@
     var sub = label == null ? p.sub : label;
     var line = spec && spec.inci ? '<p class="card__inci" title="' + esc(spec.inci) + '">INCI: ' + esc(spec.inci) + '</p>' : '';
     return '<article class="card">' +
-      '<a class="card__media" href="' + U.product(p.id) + '" aria-label="' + esc(p.title) + '">' + imgTag(img(p, 0), p.title) + (p.images[1] ? imgTag(img(p, 1), '', ' aria-hidden="true"') : '') + marks(p) + '</a>' +
+      '<a class="card__media" href="' + U.product(p.id) + '" aria-label="' + esc(p.title) + '">' + imgTag(img(p, 0), p.title) + marks(p) + '</a>' +
       favBtn(p, 'card__fav') +
       '<div class="card__body">' + (sub ? '<span class="card__sub">' + esc(sub) + '</span>' : '') +
       '<a class="card__title" href="' + U.product(p.id) + '">' + esc(p.title) + '</a>' + line +
