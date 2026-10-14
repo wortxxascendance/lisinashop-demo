@@ -35,6 +35,8 @@ const PARTS = [
 
 const KEEP = ['PILULYA', 'PROFESSIONAL', 'INCI', 'PRODEW', 'BADD', 'FLOCARE', 'DM', 'ReparAge', 'СДЭК'];
 const num = (s) => Number(String(s ?? '').replace(/\s/g, '').replace(',', '.')) || 0;
+// Остаток: пустое поле в Tilda — количество не ведётся (null), иначе число
+const stock = (s) => (String(s ?? '').trim() === '' ? null : num(s));
 const text = (h) => String(h ?? '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
 const ALLOWED = ['strong', 'b', 'br', 'ul', 'ol', 'li', 'em', 'i', 'u', 'p'];
@@ -115,7 +117,8 @@ async function main() {
         const o = JSON.parse(x.json_options || 'null');
         if (o?.[0] && x.editions?.length > 1) {
           const t = o[0].title;
-          opts = { title: t, values: x.editions.map((e) => ({ label: e[t], sku: e.sku || '', price: num(e.price), old: num(e.priceold), qty: num(e.quantity) })) };
+          // uid варианта нужен корзине Tilda: по нему она проверяет остаток
+          opts = { title: t, values: x.editions.map((e) => ({ label: e[t], sku: e.sku || '', price: num(e.price), old: num(e.priceold), qty: stock(e.quantity), uid: String(e.uid) })) };
         }
       } catch { /* без вариантов */ }
 
@@ -130,7 +133,7 @@ async function main() {
         in: [[cat, sub]],
         price: num(x.price),
         old: num(x.priceold),
-        qty: num(x.quantity ?? ed0.quantity),
+        qty: stock(String(x.quantity ?? '').trim() !== '' ? x.quantity : ed0.quantity),
         mark: x.mark || '',
         short: text(x.descr),
         html: clean(x.text),

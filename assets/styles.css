@@ -1022,3 +1022,7 @@ html.lenis, html.lenis body { height: auto; }
 
 /* Акции: фото набора вписано целиком */
 .promo__img--pack img { object-fit: contain; padding: clamp(12px, 1.6vw, 22px); mix-blend-mode: multiply; }
+
+/* Нет в наличии (остатки из Tilda) */
+.card__out { flex: none; font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.opts__list button.is-out { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }

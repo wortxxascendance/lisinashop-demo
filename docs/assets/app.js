@@ -85,6 +85,17 @@
     var unit = /вес/i.test(p.opts.title) ? ' г' : /объ/i.test(p.opts.title) ? ' мл' : '';
     return p.opts.values[opt].label + unit;
   }
+  /* Остаток как в Tilda: null — количество не ведётся, 0 — нет в наличии */
+  function stockOf(p, opt) {
+    var v = p.opts ? p.opts.values[opt || 0] : null;
+    var q = v ? v.qty : p.qty;
+    return q == null ? Infinity : q;
+  }
+  function firstOpt(p) {
+    if (!p.opts) return 0;
+    for (var i = 0; i < p.opts.values.length; i++) if (stockOf(p, i) > 0) return i;
+    return 0;
+  }
   function img(p, i) { return p.images[i || 0] || ''; }
   function imgTag(src, alt, extra) {
     return src ? '<img src="' + esc(asset(src)) + '" alt="' + esc(alt || '') + '" loading="lazy" decoding="async"' + (extra || '') + '>' : '';
@@ -122,6 +133,7 @@
   function addToCart(id, opt) {
     opt = opt || 0;
     var l = lineByKey(keyOf(id, opt));
+    if ((l ? l.qty : 0) >= stockOf(byId[id], opt)) { toast(l ? 'Больше нет в наличии' : 'Нет в наличии', 'i-x'); return; }
     if (l) l.qty += 1; else cart.push({ id: id, opt: opt, qty: 1 });
     save('ls_cart', cart);
     cartChanged(id, true);
@@ -130,6 +142,7 @@
     var l = lineByKey(key);
     if (!l) return;
     var id = l.id;
+    if (qty > l.qty && qty > stockOf(byId[id], l.opt)) { toast('Больше нет в наличии', 'i-x'); return; }
     if (qty <= 0) cart.splice(cart.indexOf(l), 1); else l.qty = qty;
     save('ls_cart', cart);
     cartChanged(id);
@@ -184,9 +197,11 @@
     return '<div class="stepper' + (light ? ' stepper--light' : '') + '"><button type="button" data-action="dec" data-key="' + key + '" aria-label="Уменьшить количество">' + icon('i-minus') + '</button><span aria-live="polite">' + q + '</span><button type="button" data-action="inc" data-key="' + key + '" aria-label="Увеличить количество">' + icon('i-plus') + '</button></div>';
   }
   function footInner(p) {
-    var q = qtyOf(p.id, 0);
-    var ctrl = q ? stepper(keyOf(p.id, 0), q)
-      : '<button type="button" class="add" data-action="add" data-id="' + p.id + '" aria-label="Добавить в корзину: ' + esc(p.title) + '">' + icon('i-plus') + '</button>';
+    var o = firstOpt(p);
+    var q = qtyOf(p.id, o);
+    var ctrl = q ? stepper(keyOf(p.id, o), q)
+      : stockOf(p, o) > 0 ? '<button type="button" class="add" data-action="add" data-id="' + p.id + '" data-opt="' + o + '" aria-label="Добавить в корзину: ' + esc(p.title) + '">' + icon('i-plus') + '</button>'
+      : '<span class="card__out">Нет в наличии</span>';
     return priceHTML(p) + ctrl;
   }
   function favBtn(p, cls) {
@@ -741,12 +756,12 @@
 
   /* ---------- Товар ---------- */
   function productView(p) {
-    pdpOpt = 0;
+    pdpOpt = firstOpt(p);
     var spec = specOf(p);
     var cur = route();
     var sec = cur.name === 'product' && SECTIONS[cur.page] ? cur.page : MAIN[p.cat] || 'pilulya_prof';
     var thumbs = p.images.length > 1 ? '<div class="gallery__thumbs">' + p.images.map(function (src, i) {
-      return '<button type="button" class="' + (i === 0 ? 'is-active' : '') + '" data-action="thumb" data-src="' + esc(src) + '" aria-label="Фото ' + (i + 1) + '">' + imgTag(src, '') + '</button>';
+      return '<button type="button" class="' + (i === 0 ? 'is-active' : '') + '" data-action="thumb" data-src="' + esc(asset(src)) + '" aria-label="Фото ' + (i + 1) + '">' + imgTag(src, '') + '</button>';
     }).join('') + '</div>' : '';
     var specs = [];
     if (spec.inci) specs.push('<div class="spec--wide"><span>INCI</span><b>' + esc(spec.inci) + '</b></div>');
@@ -764,12 +779,12 @@
         '<div class="gallery' + (thumbs ? '' : ' gallery--single') + '">' + thumbs + '<div class="gallery__main" data-main>' + imgTag(img(p, 0), p.title) + marks(p) + '</div></div>' +
         '<div class="pdp__info">' +
           '<div style="display:grid;gap:12px"><nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') + '<a href="' + U.section(sec) + '">' + SECTIONS[sec].title + '</a></nav><h1 class="pdp__title">' + esc(p.title) + '</h1></div>' +
-          '<div class="pdp__price" data-pdp-price>' + pdpPrice(p, 0) + '</div>' +
+          '<div class="pdp__price" data-pdp-price>' + pdpPrice(p, pdpOpt) + '</div>' +
           (p.short && p.cat !== 'badi' ? '<p class="pdp__short">' + esc(p.short) + '</p>' : '') +
           (p.opts ? '<div class="opts"><span class="opts__label">' + esc(p.opts.title) + '</span><div class="opts__list">' + p.opts.values.map(function (v, i) {
-            return '<button type="button" class="' + (i === 0 ? 'is-active' : '') + '" data-action="opt" data-i="' + i + '">' + esc(optLabel(p, i)) + '</button>';
+            return optBtn(p, i);
           }).join('') + '</div></div>' : '') +
-          buyBlock(p, 0) +
+          buyBlock(p, pdpOpt) +
           (specs.length ? '<div class="spec">' + specs.join('') + '</div>' : '') +
           '<div class="assure">' +
             (isDigital(p)
@@ -786,6 +801,10 @@
         '<div class="head-tools">' + railNav('rel-rail') + '</div></div>' +
         '<div class="rail" id="rel-rail">' + related.map(function (x) { return card(x); }).join('') + '</div></div></section>' : '');
   }
+  function optBtn(p, i) {
+    var out = stockOf(p, i) <= 0;
+    return '<button type="button" class="' + (i === pdpOpt ? 'is-active' : '') + (out ? ' is-out' : '') + '" data-action="opt" data-i="' + i + '"' + (out ? ' title="Нет в наличии"' : '') + '>' + esc(optLabel(p, i)) + '</button>';
+  }
   function pdpPrice(p, opt) {
     return '<b>' + money(optPrice(p, opt)) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s><span class="mark mark--sale">Экономия ' + money(p.old - p.price) + '</span>' : '');
   }
@@ -794,7 +813,8 @@
     var q = qtyOf(p.id, opt);
     var main = q
       ? stepper(key, q, true) + '<button type="button" class="btn" data-action="open-cart">В корзине · оформить ' + icon('i-arrow') + '</button>'
-      : '<button type="button" class="btn" data-action="add" data-id="' + p.id + '" data-opt="' + opt + '">Добавить в корзину ' + icon('i-bag') + '</button>';
+      : stockOf(p, opt) > 0 ? '<button type="button" class="btn" data-action="add" data-id="' + p.id + '" data-opt="' + opt + '">Добавить в корзину ' + icon('i-bag') + '</button>'
+      : '<button type="button" class="btn" disabled>Нет в наличии</button>';
     return '<div class="buy" data-buy="' + p.id + '">' + main + favBtn(p, 'buy__fav') + '</div>';
   }
 
@@ -901,18 +921,34 @@
       return;
     }
     if (!cart.length) { if (tildaCount()) openTildaCart(); return; }
+    // товары, которых уже нет в наличии, в корзину Tilda не переносим: она не даст оформить весь заказ
+    var gone = cart.filter(function (l) { return stockOf(byId[l.id], l.opt) <= 0; });
+    if (gone.length) {
+      cart = cart.filter(function (l) { return gone.indexOf(l) === -1; });
+      save('ls_cart', cart);
+      updateBadges();
+      if (!cart.length) { renderCart(); toast('Товаров из корзины больше нет в наличии', 'i-x'); return; }
+    }
     try {
       window.tcart.products = [];
       if (typeof window.tcart__saveLocalObj === 'function') window.tcart__saveLocalObj();
       cart.forEach(function (l) {
         var p = byId[l.id];
         var v = p.opts ? p.opts.values[l.opt] : null;
-        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: l.qty, uid: Number(p.id), img: absUrl(img(p, 0)) };
+        var inv = stockOf(p, l.opt);
+        // Как кнопка магазина Tilda: uid — вариант товара (по нему корзина проверяет остаток), gen_uid — сам товар
+        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: Math.min(l.qty, inv), uid: Number((v && v.uid) || p.id), gen_uid: Number(p.id), img: absUrl(img(p, 0)) };
+        if (inv !== Infinity) prod.inv = inv;
+        var parts = Object.keys(PARTS).filter(function (k) { return PARTS[k].indexOf(p.id) !== -1; });
+        if (parts.length) prod.part_uids = parts;
+        var rec = /tproduct\/(\d+)-/.exec(p.oldPath || '');
+        if (rec) { prod.recid = rec[1]; prod.url = location.origin + p.oldPath; }
         var sku = (v && v.sku) || p.sku;
         if (sku) prod.sku = sku;
         if (v) prod.options = [{ option: p.opts.title, variant: String(v.label) }];
         add(prod);
       });
+      if (gone.length) toast('Убрали из заказа: нет в наличии (' + gone.length + ')', 'i-x');
       cart = [];
       save('ls_cart', cart);
       closeAll(true);
@@ -1812,7 +1848,99 @@
   });
   app.addEventListener('animationend', function (e) { if (e.target === app) app.classList.remove('view-enter'); });
 
+  /* ---------- Свежие цены и остатки из магазина Tilda ----------
+     Каталог в data/products.js — снимок на момент сборки. Пока товары ведутся в Tilda,
+     при каждом открытии сайта берём из её API цены, остатки, варианты и состав полок. */
+  var TILDA_STORE_API = 'https://store.tildaapi.com/api/getproductslist/';
+  function tildaStock(s) { s = String(s == null ? '' : s).trim(); return s === '' ? null : Number(s.replace(',', '.')) || 0; }
+  function tildaNum(s) { return Number(String(s == null ? '' : s).replace(/\s/g, '').replace(',', '.')) || 0; }
+  function tildaText(h) { return String(h == null ? '' : h).replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function tildaHtml(h) {
+    var ok = ['strong', 'b', 'br', 'ul', 'ol', 'li', 'em', 'i', 'u', 'p'];
+    return String(h == null ? '' : h).replace(/<(\/?)(\w+)[^>]*>/g, function (m, c, t) { t = t.toLowerCase(); return ok.indexOf(t) !== -1 ? '<' + c + (t === 'b' ? 'strong' : t) + '>' : ''; }).replace(/&nbsp;/g, ' ');
+  }
+  function tildaOpts(x) {
+    var o;
+    try { o = JSON.parse(x.json_options || 'null'); } catch (e) { o = null; }
+    if (!o || !o[0] || !x.editions || x.editions.length < 2) return null;
+    var t = o[0].title;
+    return { title: t, values: x.editions.map(function (e) { return { label: e[t], sku: e.sku || '', price: tildaNum(e.price), old: tildaNum(e.priceold), qty: tildaStock(e.quantity), uid: String(e.uid) }; }) };
+  }
+  function tildaApply(p, x) {
+    var ed0 = (x.editions && x.editions[0]) || {};
+    var before = JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]);
+    p.price = tildaNum(x.price);
+    p.old = tildaNum(x.priceold);
+    p.qty = tildaStock(String(x.quantity == null ? '' : x.quantity).trim() !== '' ? x.quantity : ed0.quantity);
+    p.mark = x.mark || '';
+    p.opts = tildaOpts(x);
+    return JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]) !== before;
+  }
+  // новый товар, появившийся в Tilda после сборки: фото берём прямо с её CDN
+  function tildaNew(x, part) {
+    var sec = null, sub = '';
+    Object.keys(SECTIONS).some(function (k) { return SECTIONS[k].shelves.some(function (s) { if (s[1] === part) { sec = k; sub = s[0]; return true; } return false; }); });
+    var cat = 'prof';
+    Object.keys(MAIN).forEach(function (c) { if (MAIN[c] === sec) cat = c; });
+    var gallery = [];
+    try { gallery = JSON.parse(x.gallery || '[]').map(function (g) { return g.img; }).filter(Boolean); } catch (e) { gallery = []; }
+    var id = String(x.uid);
+    var p = { id: id, sku: String(x.sku || '').trim(), title: tildaText(x.title), cat: cat, sub: sub, in: [[cat, sub]], short: tildaText(x.descr), html: tildaHtml(x.text),
+      images: gallery.slice(0, 3).map(function (u) { var m = /static\.tildacdn\.com\/([^/]+)\/(.+)$/.exec(u); return m ? 'https://thb.tildacdn.com/' + m[1] + '/-/resize/720x/' + m[2] : u; }),
+      weight: 0, oldPath: '', slug: 'item-' + id, order: PRODUCTS.length };
+    try { p.oldPath = x.url ? new URL(x.url).pathname : ''; } catch (e) { /* без адреса */ }
+    tildaApply(p, x);
+    return p;
+  }
+  function syncTilda() {
+    var ids = Object.keys(PARTS);
+    if (PRERENDER || !(TILDA || DEMO) || !window.fetch || !window.Promise || !ids.length) return;
+    Promise.all(ids.map(function (part) {
+      return fetch(TILDA_STORE_API + '?storepartuid=' + part + '&getparts=true&getoptions=true&slice=1&size=100')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    })).then(function (res) {
+      // применяем только полный ответ: иначе часть полок опустела бы
+      if (res.some(function (j) { return !j || !Array.isArray(j.products); })) return;
+      var parts = {}, items = {}, firstPart = {}, changed = false;
+      res.forEach(function (j, i) {
+        var part = ids[i];
+        parts[part] = [];
+        j.products.forEach(function (x) {
+          var id = String(x.uid);
+          if (parts[part].indexOf(id) === -1) parts[part].push(id);
+          if (!items[id]) { items[id] = x; firstPart[id] = part; }
+        });
+      });
+      Object.keys(items).forEach(function (id) {
+        if (byId[id]) { if (tildaApply(byId[id], items[id])) changed = true; return; }
+        var p = tildaNew(items[id], firstPart[id]);
+        PRODUCTS.push(p); byId[id] = p; bySlug[p.slug] = p;
+        changed = true;
+      });
+      // товары, снятые с витрины в Tilda, убираем из списков (в корзине они остаются видны)
+      for (var i = PRODUCTS.length - 1; i >= 0; i--) if (!items[PRODUCTS[i].id]) { PRODUCTS.splice(i, 1); changed = true; }
+      if (JSON.stringify(parts) !== JSON.stringify(PARTS)) { PARTS = parts; changed = true; }
+      if (changed) refreshStock();
+    });
+  }
+  // обновляем цены и кнопки на открытой странице, не перерисовывая её; полки целиком обновятся при следующем переходе
+  function refreshStock() {
+    $all('[data-foot]').forEach(function (f) { var p = byId[f.getAttribute('data-foot')]; if (p) f.innerHTML = footInner(p); });
+    var r = route();
+    var p = productOpen && r.name === 'product' ? byId[r.id] : null;
+    if (p && $('[data-buy="' + p.id + '"]')) {
+      if (p.opts && pdpOpt >= p.opts.values.length) pdpOpt = firstOpt(p);
+      $('[data-pdp-price]').innerHTML = pdpPrice(p, pdpOpt);
+      var list = $('.opts__list');
+      if (list && p.opts) list.innerHTML = p.opts.values.map(function (v, i) { return optBtn(p, i); }).join('');
+      $('[data-buy="' + p.id + '"]').outerHTML = buyBlock(p, pdpOpt);
+    }
+    if ($('#cart') && !$('#cart').hidden) renderCart();
+  }
+
   loadShop();
+  syncTilda();
   initLenis();
   render(true);
   updateBadges();
