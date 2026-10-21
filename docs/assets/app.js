@@ -685,7 +685,7 @@
   function tildaForm() {
     var list = $all('form.js-form-proccess, form.t-form');
     for (var i = 0; i < list.length; i++) {
-      if (!list[i].closest('.t706') && !list[i].closest('#ls-root')) return list[i];
+      if (!list[i].closest('.t706') && !list[i].closest('#ls-root') && !list[i].closest('.t-popup')) return list[i];
     }
     return null;
   }
@@ -742,6 +742,19 @@
   function openMax() {
     toggleFab(false);
     if (MAX_URL) { window.open(MAX_URL, '_blank', 'noopener'); return; }
+    // как на старом сайте: окно Tilda «Техподдержка» по ссылке #max (Tilda ловит клики по таким ссылкам внутри блоков .r)
+    var hook = TILDA && document.querySelector('.t-popup[data-tooltip-hook="#max"]');
+    var rec = hook && hook.closest('.r');
+    if (rec) {
+      if (productOpen) closeProduct();
+      var a = document.createElement('a');
+      a.href = '#max';
+      a.style.display = 'none';
+      rec.appendChild(a);
+      a.click();
+      rec.removeChild(a);
+      return;
+    }
     function go() {
       var s = $('#support');
       if (!s) return false;
