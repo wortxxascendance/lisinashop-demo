@@ -1905,39 +1905,88 @@
     tildaApply(p, x);
     return p;
   }
+  function tildaGet(url) {
+    return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+  function tildaPart(part) { return tildaGet(TILDA_STORE_API + '?storepartuid=' + part + '&getparts=true&getoptions=true&slice=1&size=100'); }
+  // страница сайта для раздела магазина Tilda — по адресу, к которому раздел привязан в Tilda
+  var TILDA_PAGE_ALIAS = { pilulya_1: 'pilulya', badi_1: 'badi', teaser2: 'badi', teaser_1: 'badi' };
+  function sectionOfUrl(u) {
+    var key;
+    try { key = new URL(u).pathname.replace(/^\/+|\/+$/g, ''); } catch (e) { return null; }
+    key = TILDA_PAGE_ALIAS[key] || key;
+    return SECTIONS[key] ? key : null;
+  }
+  function shelfTitle(t) {
+    t = tildaText(t);
+    return t && t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t;
+  }
   function syncTilda() {
     var ids = Object.keys(PARTS);
     if (PRERENDER || !(TILDA || DEMO) || !window.fetch || !window.Promise || !ids.length) return;
-    Promise.all(ids.map(function (part) {
-      return fetch(TILDA_STORE_API + '?storepartuid=' + part + '&getparts=true&getoptions=true&slice=1&size=100')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .catch(function () { return null; });
-    })).then(function (res) {
+    var rec = document.getElementById('allrecords');
+    var project = rec && rec.getAttribute('data-tilda-project-id');
+    Promise.all([
+      Promise.all(ids.map(tildaPart)),
+      project ? tildaGet('https://store.tildaapi.com/api/getstoreparts/?projectid=' + encodeURIComponent(project)) : null
+    ]).then(function (both) {
+      var res = both[0];
       // применяем только полный ответ: иначе часть полок опустела бы
       if (res.some(function (j) { return !j || !Array.isArray(j.products); })) return;
-      var parts = {}, items = {}, firstPart = {}, changed = false;
-      res.forEach(function (j, i) {
-        var part = ids[i];
+      var parts = {}, items = {}, firstPart = {};
+      function collect(part, j) {
         parts[part] = [];
         j.products.forEach(function (x) {
           var id = String(x.uid);
           if (parts[part].indexOf(id) === -1) parts[part].push(id);
           if (!items[id]) { items[id] = x; firstPart[id] = part; }
         });
+      }
+      res.forEach(function (j, i) { collect(ids[i], j); });
+      // Новые разделы магазина Tilda: показываем полкой на странице, к которой раздел привязан в Tilda,
+      // если в нём есть товары, которых нет на известных полках (служебные разделы-копии вроде «Скидка бады» пропускаем)
+      var extra = (Array.isArray(both[1]) ? both[1] : []).filter(function (s) {
+        return s && s.uid && !PARTS[s.uid] && !s.hideonpublic && sectionOfUrl(s.url);
       });
-      Object.keys(items).forEach(function (id) {
-        if (byId[id]) { if (tildaApply(byId[id], items[id])) changed = true; return; }
-        var p = tildaNew(items[id], firstPart[id]);
-        PRODUCTS.push(p); byId[id] = p; bySlug[p.slug] = p;
-        changed = true;
+      return Promise.all(extra.map(function (s) { return tildaPart(s.uid); })).then(function (more) {
+        more.forEach(function (j, i) {
+          if (!j || !Array.isArray(j.products) || !j.products.some(function (x) { return !items[String(x.uid)]; })) return;
+          var part = String(extra[i].uid);
+          SECTIONS[sectionOfUrl(extra[i].url)].shelves.push([shelfTitle(extra[i].title), part]);
+          collect(part, j);
+        });
+        applyTilda(parts, items, firstPart);
       });
-      // товары, снятые с витрины в Tilda, убираем из списков (в корзине они остаются видны)
-      for (var i = PRODUCTS.length - 1; i >= 0; i--) if (!items[PRODUCTS[i].id]) { PRODUCTS.splice(i, 1); changed = true; }
-      if (JSON.stringify(parts) !== JSON.stringify(PARTS)) { PARTS = parts; changed = true; }
-      if (changed) refreshStock();
     });
   }
-  // обновляем цены и кнопки на открытой странице, не перерисовывая её; полки целиком обновятся при следующем переходе
+  function applyTilda(parts, items, firstPart) {
+    var changed = false, added = false;
+    Object.keys(items).forEach(function (id) {
+      if (byId[id]) { if (tildaApply(byId[id], items[id])) changed = true; return; }
+      var p = tildaNew(items[id], firstPart[id]);
+      PRODUCTS.push(p); byId[id] = p; bySlug[p.slug] = p;
+      added = true;
+    });
+    // товары, снятые с витрины в Tilda, убираем из списков (в корзине они остаются видны)
+    for (var i = PRODUCTS.length - 1; i >= 0; i--) if (!items[PRODUCTS[i].id]) { PRODUCTS.splice(i, 1); added = true; }
+    if (JSON.stringify(parts) !== JSON.stringify(PARTS)) { PARTS = parts; added = true; }
+    if (changed || added) refreshStock();
+    if (added) refreshShelves();
+  }
+  // состав полок поменялся: перерисовываем полки открытого раздела, не трогая остальную страницу (формы, прокрутку)
+  function refreshShelves() {
+    var r = renderedRoute;
+    if (!r || r.name !== 'section') return;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = sectionView(r.key);
+    var body = $('.catalog-body', app), fresh = $('.catalog-body', tmp);
+    if (body && fresh) { body.parentNode.replaceChild(fresh, body); setupReveal(fresh); }
+    var tabs = $('.page-head .cat-tabs', app), freshTabs = $('.cat-tabs', tmp), head = $('.page-head .wrap', app);
+    if (tabs && freshTabs) tabs.parentNode.replaceChild(freshTabs, tabs);
+    else if (tabs) tabs.parentNode.removeChild(tabs);
+    else if (freshTabs && head) head.appendChild(freshTabs);
+  }
+  // обновляем цены и кнопки на открытой странице, не перерисовывая её
   function refreshStock() {
     $all('[data-foot]').forEach(function (f) { var p = byId[f.getAttribute('data-foot')]; if (p) f.innerHTML = footInner(p); });
     var r = route();

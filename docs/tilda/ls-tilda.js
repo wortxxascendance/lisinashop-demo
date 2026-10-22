@@ -22,7 +22,7 @@
   fonts.href = 'https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Oranienbaum&display=swap';
   d.head.appendChild(fonts);
 
-  var SCRIPTS = ["https://wortxxascendance.github.io/lisinashop-demo/data/products.js?v=e8f8359c","https://wortxxascendance.github.io/lisinashop-demo/data/pages.js?v=b6381fee","https://wortxxascendance.github.io/lisinashop-demo/assets/app.js?v=8f666bd3"];
+  var SCRIPTS = ["https://wortxxascendance.github.io/lisinashop-demo/data/products.js?v=75e73e03","https://wortxxascendance.github.io/lisinashop-demo/data/pages.js?v=b6381fee","https://wortxxascendance.github.io/lisinashop-demo/assets/app.js?v=a0772c87"];
   function loadScripts(i) {
     if (i >= SCRIPTS.length) return;
     var s = d.createElement('script');
