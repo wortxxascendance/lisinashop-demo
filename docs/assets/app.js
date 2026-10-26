@@ -671,6 +671,7 @@
     }
     if (TILDA) {
       tildaLead(kind, vals).then(function () { done(false); }, function (e) {
+        if (e && e.message === 'phone') { fail('Укажите номер телефона, чтобы мы могли с вами связаться.'); return; }
         fail((e && e.message === 'noform' ? 'Форма временно недоступна.' : 'Не удалось отправить, попробуйте ещё раз.') + ' Можно написать нам в Telegram ' + TG_SUPPORT + '.');
       });
     } else if (DEMO) {
@@ -687,7 +688,13 @@
     for (var i = 0; i < list.length; i++) {
       if (!list[i].closest('.t706') && !list[i].closest('#ls-root') && !list[i].closest('.t-popup')) return list[i];
     }
-    return null;
+    // запасной путь: форма окна «Техподдержка» (#max) — её получатели те же, что у вопросов с сайта
+    return document.querySelector('.t-popup[data-tooltip-hook="#max"] form');
+  }
+  function phoneDigits(v) {
+    var d = String(v || '').replace(/\D/g, '');
+    if (d.length === 11 && (d.charAt(0) === '7' || d.charAt(0) === '8')) d = d.slice(1);
+    return d.length === 10 ? d : '';
   }
   function tildaLead(kind, vals) {
     return new Promise(function (resolve, reject) {
@@ -705,8 +712,14 @@
       put(f.querySelector('.t-input-group_ta textarea') || f.querySelector('textarea'), text);
       put(f.querySelector('.t-input-group_nm input') || f.querySelector('input[name="Name"]'), vals.name || '');
       put(f.querySelector('.t-input-group_em input') || f.querySelector('input[name="Email"]'), email);
+      var tel = vals.phone || (/@/.test(vals.contact || '') ? '' : vals.contact || '');
       var phone = f.querySelector('.t-input-group_ph input[type="tel"]:not(.t-input-phonemask)');
-      if (phone && (vals.phone || '').replace(/\D/g, '').length >= 10) put(phone, vals.phone);
+      if (phone && tel.replace(/\D/g, '').length >= 10) put(phone, tel);
+      // поле с маской Tilda: вводим 10 цифр номера, полный номер Tilda собирает сама в скрытое поле
+      var mask = f.querySelector('input.t-input-phonemask');
+      if (mask) put(mask, phoneDigits(tel));
+      var needPhone = f.querySelector('input[data-tilda-rule="phone"][data-tilda-req="1"]');
+      if (needPhone && !phoneDigits(tel)) { reject(new Error('phone')); return; }
       var ok = f.querySelector('.js-successbox'), err = f.querySelector('.js-errorbox-all'), inputs = f.querySelector('.t-form__inputsbox');
       if (ok) ok.style.display = 'none';
       if (inputs) inputs.style.display = '';
