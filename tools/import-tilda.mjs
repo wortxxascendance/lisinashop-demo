@@ -1,7 +1,7 @@
 // Импорт каталога из магазина Tilda (публичный API витрины) в data/products.json + data/products.js.
 // Запуск: npm run import:tilda [-- --images]   (--images докачивает недостающие фото в assets/img/p)
 // Пока сайт на Tilda, скрипт можно запускать повторно: каталог синхронизируется.
-import { mkdir, writeFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -106,7 +106,8 @@ async function main() {
       }
       let gallery = [];
       try { gallery = JSON.parse(x.gallery || '[]').map((o) => o.img).filter(Boolean); } catch { /* пустая галерея */ }
-      const local = gallery.slice(0, 3).map((u, i) => {
+      const src = gallery.slice(0, 8); // у вариантов бывают свои фото дальше третьего (кремы 100 г — 4-е фото)
+      const local = src.map((u, i) => {
         const f = `assets/img/p/${id}${i ? '-' + i : ''}.webp`;
         images.set(f, u);
         return f;
@@ -118,7 +119,8 @@ async function main() {
         if (o?.[0] && x.editions?.length > 1) {
           const t = o[0].title;
           // uid варианта нужен корзине Tilda: по нему она проверяет остаток
-          opts = { title: t, values: x.editions.map((e) => ({ label: e[t], sku: e.sku || '', price: num(e.price), old: num(e.priceold), qty: stock(e.quantity), uid: String(e.uid) })) };
+          // img — номер фото варианта в галерее: при выборе варианта витрина показывает его, как Tilda
+          opts = { title: t, values: x.editions.map((e) => ({ label: e[t], sku: e.sku || '', price: num(e.price), old: num(e.priceold), qty: stock(e.quantity), uid: String(e.uid), img: e.img && gallery.slice(0, 8).indexOf(e.img) >= 0 ? gallery.slice(0, 8).indexOf(e.img) : null })) };
         }
       } catch { /* без вариантов */ }
 
@@ -138,6 +140,7 @@ async function main() {
         short: text(x.descr),
         html: clean(x.text),
         images: local,
+        src, // адреса фото в Tilda: витрина сверяет их с API и показывает новые фото сразу
         opts,
         weight: num(x.pack_m ?? ed0.pack_m),
         oldPath: x.url ? new URL(x.url).pathname : '',
@@ -168,19 +171,25 @@ async function main() {
 
   if (withImages) {
     const { default: sharp } = await import('sharp');
+    // откуда скачано каждое фото: заменённое в Tilda фото получает новый адрес и скачивается заново
+    const manifestFile = join(ROOT, 'data/images.json');
+    let manifest = {};
+    try { manifest = JSON.parse(await readFile(manifestFile, 'utf8')); } catch { /* первый запуск: перекачиваем всё */ }
     let done = 0;
     for (const [f, u] of images) {
       const out = join(ROOT, f);
-      if (await exists(out)) continue;
+      if (manifest[f] === u && await exists(out)) continue;
       const m = u.match(/static\.tildacdn\.com\/([^/]+)\/(.+)$/);
       const src = m ? `https://thb.tildacdn.com/${m[1]}/-/resize/720x/${m[2]}` : u;
       const res = await fetch(src, { headers: { 'user-agent': 'Mozilla/5.0' } });
       if (!res.ok) { console.warn('не скачалось', f, res.status); continue; }
       await mkdir(dirname(out), { recursive: true });
       await sharp(Buffer.from(await res.arrayBuffer())).resize({ width: 720, withoutEnlargement: true }).webp({ quality: 80 }).toFile(out);
+      manifest[f] = u;
       done++;
     }
-    console.log(`Докачано фото: ${done}`);
+    await writeFile(manifestFile, JSON.stringify(manifest, null, 1));
+    console.log(`Скачано фото: ${done}`);
   }
 }
 

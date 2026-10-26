@@ -786,8 +786,9 @@
     var spec = specOf(p);
     var cur = route();
     var sec = cur.name === 'product' && SECTIONS[cur.page] ? cur.page : MAIN[p.cat] || 'pilulya_prof';
+    var start = optImg(p, pdpOpt);
     var thumbs = p.images.length > 1 ? '<div class="gallery__thumbs">' + p.images.map(function (src, i) {
-      return '<button type="button" class="' + (i === 0 ? 'is-active' : '') + '" data-action="thumb" data-src="' + esc(asset(src)) + '" aria-label="Фото ' + (i + 1) + '">' + imgTag(src, '') + '</button>';
+      return '<button type="button" class="' + (i === start ? 'is-active' : '') + '" data-action="thumb" data-src="' + esc(asset(src)) + '" aria-label="Фото ' + (i + 1) + '">' + imgTag(src, '') + '</button>';
     }).join('') + '</div>' : '';
     var specs = [];
     if (spec.inci) specs.push('<div class="spec--wide"><span>INCI</span><b>' + esc(spec.inci) + '</b></div>');
@@ -802,7 +803,7 @@
     if (related.length < 4) related = related.concat(PRODUCTS.filter(function (x) { return x.id !== p.id && x.cat === p.cat && related.indexOf(x) === -1; }).slice(0, 8 - related.length));
 
     return '<div class="wrap pdp">' +
-        '<div class="gallery' + (thumbs ? '' : ' gallery--single') + '">' + thumbs + '<div class="gallery__main" data-main>' + imgTag(img(p, 0), p.title) + marks(p) + '</div></div>' +
+        '<div class="gallery' + (thumbs ? '' : ' gallery--single') + '">' + thumbs + '<div class="gallery__main" data-main>' + imgTag(img(p, start), p.title) + marks(p) + '</div></div>' +
         '<div class="pdp__info">' +
           '<div style="display:grid;gap:12px"><nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') + '<a href="' + U.section(sec) + '">' + SECTIONS[sec].title + '</a></nav><h1 class="pdp__title">' + esc(p.title) + '</h1></div>' +
           '<div class="pdp__price" data-pdp-price>' + pdpPrice(p, pdpOpt) + '</div>' +
@@ -826,6 +827,17 @@
       (related.length ? '<section class="section section--tight pdp__related"><div class="wrap"><div class="section-head"><div><p class="eyebrow">Рекомендуем</p><h2 class="h2">С этим товаром также покупают</h2></div>' +
         '<div class="head-tools">' + railNav('rel-rail') + '</div></div>' +
         '<div class="rail" id="rel-rail">' + related.map(function (x) { return card(x); }).join('') + '</div></div></section>' : '');
+  }
+  // номер фото варианта в галерее (в Tilda у варианта может быть своё фото), иначе первое фото
+  function optImg(p, opt) {
+    var v = p.opts && p.opts.values[opt];
+    return v && v.img != null && p.images[v.img] ? v.img : 0;
+  }
+  function showPhoto(i) {
+    var b = $all('.gallery__thumbs button');
+    b.forEach(function (x, k) { x.classList.toggle('is-active', k === i); });
+    var main = $('[data-main] img');
+    if (main && b[i]) main.src = b[i].getAttribute('data-src');
   }
   function optBtn(p, i) {
     var out = stockOf(p, i) <= 0;
@@ -860,7 +872,7 @@
       : '<div class="ship-meter' + (left ? '' : ' is-done') + '"><span>' + (left ? 'До бесплатной доставки осталось <b>' + money(left) + '</b>' : '<b>Доставка СДЭК бесплатная</b>') + '</span><div class="meter"><i style="width:' + Math.min(100, total / FREE_SHIP * 100) + '%"></i></div></div>';
     var lines = cart.map(function (l) {
       var p = byId[l.id], key = keyOf(l.id, l.opt);
-      return '<div class="line"><a class="line__img" href="' + U.product(p.id) + '" data-action="close">' + imgTag(img(p, 0), '') + '</a><div class="line__body">' +
+      return '<div class="line"><a class="line__img" href="' + U.product(p.id) + '" data-action="close">' + imgTag(img(p, optImg(p, l.opt)), '') + '</a><div class="line__body">' +
         '<a class="line__title" href="' + U.product(p.id) + '" data-action="close">' + esc(p.title) + '</a>' +
         (p.opts ? '<span class="line__opt">' + esc(p.opts.title) + ': ' + esc(optLabel(p, l.opt)) + '</span>' : isDigital(p) ? '<span class="line__opt">Электронный формат</span>' : '') +
         '<div class="line__row">' + stepper(key, l.qty, true) +
@@ -963,7 +975,7 @@
         var v = p.opts ? p.opts.values[l.opt] : null;
         var inv = stockOf(p, l.opt);
         // Как кнопка магазина Tilda: uid — вариант товара (по нему корзина проверяет остаток), gen_uid — сам товар
-        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: Math.min(l.qty, inv), uid: Number((v && v.uid) || p.id), gen_uid: Number(p.id), img: absUrl(img(p, 0)) };
+        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: Math.min(l.qty, inv), uid: Number((v && v.uid) || p.id), gen_uid: Number(p.id), img: absUrl(img(p, optImg(p, l.opt))) };
         if (inv !== Infinity) prod.inv = inv;
         var parts = Object.keys(PARTS).filter(function (k) { return PARTS[k].indexOf(p.id) !== -1; });
         if (parts.length) prod.part_uids = parts;
@@ -1169,7 +1181,7 @@
     box.innerHTML = '<h2 class="panel__title">Ваш заказ</h2>' +
       '<div class="sum-items">' + cart.map(function (l) {
         var p = byId[l.id];
-        return '<div class="sum-item">' + imgTag(img(p, 0), '') + '<div>' + esc(p.title) + '<small>' + (p.opts ? esc(optLabel(p, l.opt)) + ' · ' : '') + l.qty + ' шт.</small></div><b>' + money(optPrice(p, l.opt) * l.qty) + '</b></div>';
+        return '<div class="sum-item">' + imgTag(img(p, optImg(p, l.opt)), '') + '<div>' + esc(p.title) + '<small>' + (p.opts ? esc(optLabel(p, l.opt)) + ' · ' : '') + l.qty + ' шт.</small></div><b>' + money(optPrice(p, l.opt) * l.qty) + '</b></div>';
       }).join('') + '</div>' +
       '<div class="sum-line"><span>Товары (' + cartCount() + ')</span><span>' + rub(sub) + '</span></div>' +
       (discount ? '<div class="sum-line sum-line--ok"><span>Скидка по промокоду</span><span>−' + rub(discount) + '</span></div>' : '') +
@@ -1703,6 +1715,7 @@
         var p = byId[route().id];
         pdpOpt = parseInt(el.getAttribute('data-i'), 10);
         $all('.opts__list button').forEach(function (b) { b.classList.toggle('is-active', b === el); });
+        if (p.opts.values[pdpOpt].img != null) showPhoto(optImg(p, pdpOpt));
         $('[data-pdp-price]').innerHTML = pdpPrice(p, pdpOpt);
         $('[data-buy="' + p.id + '"]').outerHTML = buyBlock(p, pdpOpt);
         break;
@@ -1889,18 +1902,29 @@
     var o;
     try { o = JSON.parse(x.json_options || 'null'); } catch (e) { o = null; }
     if (!o || !o[0] || !x.editions || x.editions.length < 2) return null;
-    var t = o[0].title;
-    return { title: t, values: x.editions.map(function (e) { return { label: e[t], sku: e.sku || '', price: tildaNum(e.price), old: tildaNum(e.priceold), qty: tildaStock(e.quantity), uid: String(e.uid) }; }) };
+    var t = o[0].title, gal = tildaGallery(x);
+    return { title: t, values: x.editions.map(function (e) {
+      var i = e.img ? gal.indexOf(e.img) : -1;
+      return { label: e[t], sku: e.sku || '', price: tildaNum(e.price), old: tildaNum(e.priceold), qty: tildaStock(e.quantity), uid: String(e.uid), img: i >= 0 ? i : null };
+    }) };
   }
+  function tildaGallery(x) {
+    try { return JSON.parse(x.gallery || '[]').map(function (g) { return g.img; }).filter(Boolean).slice(0, 8); } catch (e) { return []; }
+  }
+  function tildaThumb(u) { var m = /static\.tildacdn\.com\/([^/]+)\/(.+)$/.exec(u); return m ? 'https://thb.tildacdn.com/' + m[1] + '/-/resize/720x/' + m[2] : u; }
   function tildaApply(p, x) {
     var ed0 = (x.editions && x.editions[0]) || {};
+    // фото заменили в Tilda (у нового фото новый адрес): показываем его с CDN Tilda, не дожидаясь пересборки
+    var src = tildaGallery(x), newPhotos = false;
+    if (src.length && JSON.stringify(src) !== JSON.stringify(p.src || [])) { newPhotos = !!p.src; p.src = src; p.images = src.map(tildaThumb); }
     var before = JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]);
     p.price = tildaNum(x.price);
     p.old = tildaNum(x.priceold);
     p.qty = tildaStock(String(x.quantity == null ? '' : x.quantity).trim() !== '' ? x.quantity : ed0.quantity);
     p.mark = x.mark || '';
     p.opts = tildaOpts(x);
-    return JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]) !== before;
+    // 2 — поменялись фото (нужно перерисовать карточки), true — цены или остатки
+    return newPhotos ? 2 : JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]) !== before;
   }
   // новый товар, появившийся в Tilda после сборки: фото берём прямо с её CDN
   function tildaNew(x, part) {
@@ -1908,11 +1932,10 @@
     Object.keys(SECTIONS).some(function (k) { return SECTIONS[k].shelves.some(function (s) { if (s[1] === part) { sec = k; sub = s[0]; return true; } return false; }); });
     var cat = 'prof';
     Object.keys(MAIN).forEach(function (c) { if (MAIN[c] === sec) cat = c; });
-    var gallery = [];
-    try { gallery = JSON.parse(x.gallery || '[]').map(function (g) { return g.img; }).filter(Boolean); } catch (e) { gallery = []; }
+    var gallery = tildaGallery(x);
     var id = String(x.uid);
     var p = { id: id, sku: String(x.sku || '').trim(), title: tildaText(x.title), cat: cat, sub: sub, in: [[cat, sub]], short: tildaText(x.descr), html: tildaHtml(x.text),
-      images: gallery.slice(0, 3).map(function (u) { var m = /static\.tildacdn\.com\/([^/]+)\/(.+)$/.exec(u); return m ? 'https://thb.tildacdn.com/' + m[1] + '/-/resize/720x/' + m[2] : u; }),
+      images: gallery.map(tildaThumb), src: gallery,
       weight: 0, oldPath: '', slug: 'item-' + id, order: PRODUCTS.length };
     try { p.oldPath = x.url ? new URL(x.url).pathname : ''; } catch (e) { /* без адреса */ }
     tildaApply(p, x);
@@ -1975,7 +1998,7 @@
   function applyTilda(parts, items, firstPart) {
     var changed = false, added = false;
     Object.keys(items).forEach(function (id) {
-      if (byId[id]) { if (tildaApply(byId[id], items[id])) changed = true; return; }
+      if (byId[id]) { var r = tildaApply(byId[id], items[id]); if (r) changed = true; if (r === 2) added = true; return; }
       var p = tildaNew(items[id], firstPart[id]);
       PRODUCTS.push(p); byId[id] = p; bySlug[p.slug] = p;
       added = true;
