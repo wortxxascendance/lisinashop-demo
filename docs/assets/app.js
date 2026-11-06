@@ -85,6 +85,12 @@
     var unit = /вес/i.test(p.opts.title) ? ' г' : /объ/i.test(p.opts.title) ? ' мл' : '';
     return p.opts.values[opt].label + unit;
   }
+  /* Объём или вес для карточки: варианты товара, иначе поле «Характеристики» из Tilda */
+  function volOf(p) {
+    if (p.opts) return /вес|объ/i.test(p.opts.title) ? p.opts.values.map(function (v, i) { return optLabel(p, i); }).join(' · ') : '';
+    var c = (p.chars || []).filter(function (x) { return /^(объ[её]м|вес)$/i.test(x[0]); })[0];
+    return c ? c[1] : '';
+  }
   /* Остаток как в Tilda: null — количество не ведётся, 0 — нет в наличии */
   function stockOf(p, opt) {
     var v = p.opts ? p.opts.values[opt || 0] : null;
@@ -212,6 +218,8 @@
     var spec = p.cat === 'badi' ? specOf(p) : null;
     var sub = label == null ? p.sub : label;
     var line = spec && spec.inci ? '<p class="card__inci" title="' + esc(spec.inci) + '">INCI: ' + esc(spec.inci) + '</p>' : '';
+    var vol = volOf(p);
+    if (vol) line = '<p class="card__vol">' + esc(vol) + '</p>' + line;
     return '<article class="card">' +
       '<a class="card__media" href="' + U.product(p.id) + '" aria-label="' + esc(p.title) + '">' + imgTag(img(p, 0), p.title) + marks(p) + '</a>' +
       favBtn(p, 'card__fav') +
@@ -398,7 +406,7 @@
     $all('[data-nav]').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-nav') === nav); });
     setupReveal(app);
     setupMagnetic(app);
-    if (r.name === 'home' && booted) heroEnter();
+    setupPhero();
   }
 
   /* ---------- Окно товара (как всплывающая карточка на Tilda) ---------- */
@@ -440,11 +448,6 @@
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
   }
   function shelfItems(part) { return (PARTS[part] || []).map(function (id) { return byId[id]; }).filter(Boolean); }
-  function countIn(key) {
-    var seen = {};
-    SECTIONS[key].shelves.forEach(function (sh) { shelfItems(sh[1]).forEach(function (p) { seen[p.id] = 1; }); });
-    return Object.keys(seen).length;
-  }
   function eNote() {
     return '<div class="note">' + icon('i-mail') + '<span>' + (TILDA
       ? 'Если вы заказываете только сборники или видеоуроки, выбирайте способ доставки «Заказ электронных сборников»: ссылки придут на почту.'
@@ -453,25 +456,71 @@
 
   /* ---------- Главная: первый экран, дальше блоки в порядке старого сайта ---------- */
   function homeView() {
-    return heroSection() + kitSection() + promosSection(true) + noveltySection() + tilesSection() + shipBanner(true) +
+    return promoHero(true) + setsSection() + kitSection() + promosSection(true) + noveltySection() + tilesSection() + shipBanner(true) +
       quizSection() + collabSection() + reviewsSection() + reviewFormSection();
   }
 
-  function heroSection() {
-    var filler = find('MOLECULAR LIPID');
-    var kit = find('тартовый набор');
-    return '<section class="hero"><div class="wrap hero__grid">' +
-      '<div class="hero__text">' +
-        (filler ? '<a class="hero__tag" data-in style="--d:.05s" href="' + U.product(filler.id) + '"><b>NEW</b> Филлер-реконструктор Molecular Lipid ' + icon('i-arrow', 'i--xs') + '</a>' : '') +
-        '<h1 class="h1"><span class="hl"><span style="--i:0">Уход за волосами</span></span><span class="hl"><span style="--i:1"><em>профессионального</em></span></span><span class="hl"><span style="--i:2">уровня</span></span></h1>' +
-        '<p class="lead" data-in style="--d:.45s">Косметика PILULYA, активы и рецепты Татьяны Лисиной для мастеров, тритментологов и тех, кто ухаживает за волосами дома.</p>' +
-        '<div class="hero__actions" data-in style="--d:.6s"><a class="btn" data-magnetic href="' + U.catalog() + '">Перейти в каталог ' + icon('i-arrow') + '</a><button type="button" class="btn btn--ghost" data-magnetic data-action="open-quiz">Подобрать уход</button></div>' +
-        '<div class="hero__facts" data-in style="--d:.75s"><div><b data-count="' + PRODUCTS.length + '">' + PRODUCTS.length + '</b><span>товаров в каталоге</span></div><div><b data-count="15" data-prefix="−" data-suffix="%">−15%</b><span>к ценам на WB</span></div><div><b data-count="4500" data-suffix=" ₽">4 500 ₽</b><span>бесплатная доставка от</span></div></div>' +
-      '</div>' +
-      '<div class="hero__visual">' +
-        '<div class="arch"><div class="arch__px"><img src="' + asset('assets/img/hero-tall.webp') + '" alt="Профессиональная линия PILULYA" fetchpriority="high"></div></div>' +
-        (kit ? '<a class="hero__seal" data-in style="--d:1.1s" href="' + U.product(kit.id) + '" aria-label="Стартовый набор со скидкой 62%"><svg class="seal__ring" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="seal-path" d="M60,60 m-47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0"/></defs><text><textPath href="#seal-path" textLength="290">СТАРТОВЫЙ НАБОР · ВЫГОДА · PILULYA ·</textPath></text></svg><span class="seal__c">−62%</span></a>' : '') +
-        (filler ? '<a class="hero__card" data-in style="--d:1.25s" href="' + U.product(filler.id) + '">' + imgTag(img(filler, 0), '') + '<p><b>Molecular Lipid</b>Филлер для повреждённых волос · ' + money(filler.price) + '</p></a>' : '') +
+  /* Акции на первом экране: прошедшие скрываются сами, текущая стоит первой, дальше по датам.
+     Баннер (img): квадрат от 1200×1200 с ровным фоном. Чтобы фото сливалось с фоном слайда:
+     bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
+     Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
+  var PROMOS = [
+    { from: '2026-11-01', to: '2026-11-09', dates: '1–9 ноября', title: 'Твои волосы в стиле old money', sale: 'до 60%', text: 'на серию домашнего ухода PILULYA', page: 'pilulya', img: 'assets/img/promo/old-money.webp', bg: 'linear-gradient(180deg, #928a92, #999199, #999299, #9d959d, #ada5b1)', bgm: '#a49ba4' },
+    { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', sale: 'до 60%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'pilulya_prof', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
+    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 70%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
+    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', product: '542109948603', bg: '#f9f9fb', bgm: '#ede6ed' },
+    { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', product: '320576766532', bg: 'linear-gradient(180deg, #edebea, #eeecea, #f1efee, #f5f5f5, #fafafa)', bgm: '#fcfbfc' }
+  ];
+  function isoDate(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function promoHero(withH1) {
+    var today = isoDate(new Date());
+    var list = PROMOS.filter(function (a) { return !a.to || a.to >= today; });
+    if (!list.length) return '';
+    return '<section class="phero" aria-label="Акции">' +
+      (withH1 ? '<h1 class="phero__h1">Косметика PILULYA, активы и рецепты для волос: акции LisinaShop</h1>' : '') +
+      '<div class="phero__track" id="phero-track">' + list.map(function (a, i) {
+        var p = a.product && byId[a.product];
+        var src = a.img || (p ? img(p, 0) : '');
+        var now = a.from && a.from <= today;
+        var label = a.dates ? (now ? 'Акция сейчас' : 'Скоро') : a.badge;
+        return '<article class="pslide" style="--bg:' + a.bg + ';--bgm:' + a.bgm + '">' +
+          '<div class="pslide__text">' +
+            '<p class="pslide__date"><b' + (now ? ' class="is-now"' : '') + '>' + label + '</b>' + (a.dates ? '<span>' + a.dates + '</span>' : '') + '</p>' +
+            '<h2 class="pslide__title">' + esc(a.title) + '</h2>' +
+            (a.sale ? '<p class="pslide__sale"><small>Скидка</small>' + a.sale + '</p>' : '') +
+            '<p class="pslide__lead">' + esc(a.text) + '</p>' +
+            '<a class="btn" href="' + U.section(a.page) + '">Смотреть товары ' + icon('i-arrow') + '</a>' +
+          '</div>' +
+          '<a class="pslide__media" href="' + U.section(a.page) + '" tabindex="-1" aria-hidden="true">' +
+            (i === 0 ? '<img src="' + esc(asset(src)) + '" alt="" fetchpriority="high">' : imgTag(src, '')) +
+          '</a></article>';
+      }).join('') + '</div>' +
+      (list.length > 1 ? '<div class="wrap phero__bar"><div class="phero__dots">' + list.map(function (a, i) {
+        return '<button type="button" data-action="phero-go" data-i="' + i + '" aria-label="Акция ' + (i + 1) + ' из ' + list.length + '"' + (i ? '' : ' class="is-on"') + '></button>';
+      }).join('') + '</div>' + railNav('phero-track') + '</div>' : '') +
+    '</section>';
+  }
+  function setupPhero() {
+    var track = document.getElementById('phero-track');
+    if (!track) return;
+    var dots = $all('.phero__dots button');
+    track.addEventListener('scroll', function () {
+      var step = track.children[1] ? track.children[1].offsetLeft - track.children[0].offsetLeft : 1;
+      var on = Math.round(track.scrollLeft / step);
+      dots.forEach(function (d, i) { d.classList.toggle('is-on', i === on); });
+    }, { passive: true });
+  }
+
+  /* Подарочные наборы на главной: в общем каталоге они теряются */
+  function setsSection() {
+    var creams = byId['542109948603'];
+    var cloud = byId['279717742663'];
+    if (!creams && !cloud) return '';
+    return '<section class="section section--tight"><div class="wrap">' +
+      '<div class="section-head"><div><p class="eyebrow">Подарочные наборы</p><h2 class="h2">Кремы и&nbsp;Cloud of Love</h2></div><a class="link-arrow" href="' + U.section('pilulya') + '">Вся серия ' + icon('i-arrow') + '</a></div>' +
+      '<div class="promos">' +
+        (creams ? promo(creams, 'promo--set promo--creams', 'Набор из&nbsp;3 парфюмированных кремов', 'Три аромата с&nbsp;феромонами: «Амазонка-59», «Карнавал-68» и&nbsp;«Бразильянка-62». Для рук и&nbsp;тела, по&nbsp;50&nbsp;мл.', '', 'Подарочный набор') : '') +
+        (cloud ? promo(cloud, 'promo--set promo--cloud', 'Набор для волос Cloud of Love', 'Три средства с&nbsp;феромонами для комплексного ухода: мягкость, гладкость и&nbsp;блеск.', '', 'Подарочный набор') : '') +
       '</div></div></section>';
   }
 
@@ -508,9 +557,9 @@
       '</div></div></section>';
   }
   // фото набора целиком (все банки в кадре), без обрезки; src — то же фото с белым фоном, если у исходного фон серый
-  function promo(p, cls, title, text, src) {
+  function promo(p, cls, title, text, src, badge) {
     return '<article class="promo ' + cls + '"><div class="promo__text">' +
-      '<span class="promo__limit">' + icon('i-gift') + ' Всего 100 наборов</span>' +
+      '<span class="promo__limit">' + icon('i-gift') + ' ' + (badge || 'Всего 100 наборов') + '</span>' +
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
       '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn--sm" data-action="add" data-id="' + p.id + '">В корзину</button><a class="btn btn--sm btn--ghost" href="' + U.product(p.id) + '">Подробнее</a></div></div>' +
@@ -540,9 +589,8 @@
       '</div></div></section>';
   }
   function tile(key, title, src, text) {
-    var n = countIn(key);
     return '<a class="cat" href="' + U.section(key) + '">' + imgTag(src, '') +
-      '<span class="cat__count">' + n + ' ' + plural(n, 'товар', 'товара', 'товаров') + '</span><span class="cat__go" aria-hidden="true">' + icon('i-arrow') + '</span>' +
+      '<span class="cat__go" aria-hidden="true">' + icon('i-arrow') + '</span>' +
       '<h3>' + title + '</h3><p>' + text + '</p><span class="cat__more">Подробнее ' + icon('i-arrow', 'i--xs') + '</span></a>';
   }
 
@@ -608,7 +656,7 @@
 
   /* ---------- Акции: как на старой странице akzia ---------- */
   function akziaView() {
-    return pageHead('Акции', SALE_LEAD) + kitSection() + promosSection(false) + shipBanner(false) + reviewFormSection();
+    return pageHead('Акции', SALE_LEAD) + promoHero(false) + kitSection() + promosSection(false) + shipBanner(false) + reviewFormSection();
   }
 
   /* ---------- Техподдержка (на каждой странице) ---------- */
@@ -795,6 +843,15 @@
     if (spec['ввод']) specs.push('<div><span>Ввод</span><b>' + esc(spec['ввод']) + '</b></div>');
     if (spec.ph) specs.push('<div><span>pH</span><b>' + esc(spec.ph) + '</b></div>');
     if (isDigital(p)) specs.push('<div><span>Формат</span><b>Электронный, PDF</b></div><div><span>Доставка</span><b>На e-mail после оплаты</b></div>');
+    // Характеристики как в карточке Tilda. У товара с вариантами объём и вес выбираются кнопками, а размеры у каждого варианта свои
+    var chars = p.chars || [];
+    chars.forEach(function (c) { specs.push('<div><span>' + esc(c[0]) + '</span><b>' + esc(c[1]) + '</b></div>'); });
+    if (!p.opts && !isDigital(p)) {
+      if (p.size) specs.push('<div><span>Размер</span><b>' + esc(p.size) + '</b></div>');
+      if (p.weight && !chars.some(function (c) { return /^вес$/i.test(c[0]); })) specs.push('<div><span>Вес</span><b>' + p.weight + ' г</b></div>');
+    }
+    if (p.brand) specs.push('<div><span>Бренд</span><b>' + esc(p.brand) + '</b></div>');
+    if (p.sku) specs.push('<div><span>Артикул</span><b>' + esc(p.sku) + '</b></div>');
 
     // «С этим товаром также покупают»: соседи по полке на странице Tilda, затем товары того же раздела
     var shelf = [];
@@ -838,6 +895,12 @@
     b.forEach(function (x, k) { x.classList.toggle('is-active', k === i); });
     var main = $('[data-main] img');
     if (main && b[i]) main.src = b[i].getAttribute('data-src');
+  }
+  function selectOpt(p, i) {
+    pdpOpt = i;
+    $all('.opts__list button').forEach(function (b) { b.classList.toggle('is-active', parseInt(b.getAttribute('data-i'), 10) === i); });
+    $('[data-pdp-price]').innerHTML = pdpPrice(p, i);
+    $('[data-buy="' + p.id + '"]').outerHTML = buyBlock(p, i);
   }
   function optBtn(p, i) {
     var out = stockOf(p, i) <= 0;
@@ -1462,18 +1525,7 @@
     requestAnimationFrame(frame);
   }
 
-  /* Вход hero: снимаем и заново ставим is-ready, чтобы анимация проигралась */
-  function heroEnter() {
-    if (!$('.hero')) return;
-    body.classList.remove('is-ready');
-    void body.offsetWidth;
-    requestAnimationFrame(function () {
-      body.classList.add('is-ready');
-      setTimeout(function () { $all('.hero [data-count]').forEach(countUp); }, 900);
-    });
-  }
-
-  /* Заставка: лиса прорисовывается, затем шторка уходит вверх и стартует hero */
+  /* Заставка: лиса прорисовывается, затем шторка уходит вверх */
   function boot() {
     var root = document.documentElement;
     var intro = $('#intro');
@@ -1483,7 +1535,6 @@
       root.classList.add('booted');
       root.style.overflow = '';
       if (lenis) lenis.start();
-      heroEnter();
     }
     if (!intro || root.classList.contains('no-intro')) { if (intro) intro.remove(); finish(); return; }
     try { sessionStorage.setItem('ls_intro', '1'); } catch (e) { /* без sessionStorage заставка покажется снова */ }
@@ -1518,7 +1569,7 @@
     if (!io) { $all('.kit__save', root).forEach(function (el) { el.classList.add('in'); }); return; }
     var vh = window.innerHeight;
     $all(REVEAL, root).forEach(function (el) {
-      if (el.closest('.hero') || el.closest('.rv, .rv-clip')) return;
+      if (el.closest('.rv, .rv-clip')) return;
       if (el.getBoundingClientRect().top < vh * 0.9) { el.classList.add('in'); return; }
       el.classList.add(el.classList.contains('cat') ? 'rv-clip' : 'rv');
       var idx = Array.prototype.indexOf.call(el.parentNode.children, el);
@@ -1547,16 +1598,10 @@
     });
   }
 
-  /* Параллакс hero за курсором и свечение в блоке набора */
+  /* Свечение в блоке набора */
   if (FINE && !REDUCED) {
     document.addEventListener('pointermove', function (e) {
       if (!e.target.closest) return;
-      var hero = e.target.closest('.hero');
-      if (hero) {
-        var r = hero.getBoundingClientRect();
-        hero.style.setProperty('--mx', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3));
-        hero.style.setProperty('--my', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3));
-      }
       var kit = e.target.closest('.kit');
       if (kit) {
         var k = kit.getBoundingClientRect();
@@ -1566,7 +1611,7 @@
     }, { passive: true });
   }
 
-  /* Прокрутка: шапка прячется вниз, фото hero уплывает, бегущая строка наклоняется */
+  /* Прокрутка: шапка прячется вниз, бегущая строка наклоняется */
   var lastY = 0, ticking = false, skew = 0, skewTimer;
   function layerOpen() { return ['cart', 'menu', 'search', 'quiz'].some(function (id) { return !document.getElementById(id).hidden; }); }
   function overlayOpen() { return productOpen || layerOpen(); }
@@ -1582,8 +1627,6 @@
         else if (dy < -4 || y < 200) { header.classList.remove('is-hidden'); body.classList.remove('hdr-hidden'); }
       }
       if (!REDUCED) {
-        var px = $('.arch__px');
-        if (px && y < window.innerHeight * 1.5) px.style.transform = 'translate3d(0,' + (y * 0.12).toFixed(1) + 'px,0)';
         var m = $('.marquee__skew');
         if (m) {
           skew += (Math.max(-7, Math.min(7, dy * 0.25)) - skew) * 0.5;
@@ -1697,6 +1740,12 @@
         if (r) r.scrollBy({ left: r.clientWidth * 0.85 * parseInt(el.getAttribute('data-dir'), 10), behavior: 'smooth' });
         break;
       }
+      case 'phero-go': {
+        var tr = document.getElementById('phero-track');
+        var sl = tr && tr.children[+el.getAttribute('data-i')];
+        if (sl) tr.scrollTo({ left: sl.offsetLeft - tr.children[0].offsetLeft, behavior: REDUCED ? 'auto' : 'smooth' });
+        break;
+      }
       case 'jump': {
         var t = document.getElementById(el.getAttribute('data-target'));
         if (t) scrollToEl(t);
@@ -1706,18 +1755,24 @@
       case 'fab': toggleFab(); break;
       case 'max': openMax(); break;
       case 'thumb': {
-        $all('.gallery__thumbs button').forEach(function (b) { b.classList.toggle('is-active', b === el); });
+        var shots = $all('.gallery__thumbs button');
+        shots.forEach(function (b) { b.classList.toggle('is-active', b === el); });
         var main = $('[data-main] img');
         if (main) { main.src = el.getAttribute('data-src'); main.style.animation = 'none'; void main.offsetWidth; main.style.animation = ''; }
+        // Фото варианта выбирает сам вариант: вместе с фото меняются цена и кнопка покупки
+        var shown = byId[route().id];
+        if (shown && shown.opts) shown.opts.values.some(function (v, i) {
+          if (optImg(shown, i) !== shots.indexOf(el)) return false;
+          selectOpt(shown, i);
+          return true;
+        });
         break;
       }
       case 'opt': {
         var p = byId[route().id];
-        pdpOpt = parseInt(el.getAttribute('data-i'), 10);
-        $all('.opts__list button').forEach(function (b) { b.classList.toggle('is-active', b === el); });
-        if (p.opts.values[pdpOpt].img != null) showPhoto(optImg(p, pdpOpt));
-        $('[data-pdp-price]').innerHTML = pdpPrice(p, pdpOpt);
-        $('[data-buy="' + p.id + '"]').outerHTML = buyBlock(p, pdpOpt);
+        var picked = parseInt(el.getAttribute('data-i'), 10);
+        if (p.opts.values[picked].img != null) showPhoto(optImg(p, picked));
+        selectOpt(p, picked);
         break;
       }
       case 'promo': {
@@ -1915,16 +1970,25 @@
   function tildaApply(p, x) {
     var ed0 = (x.editions && x.editions[0]) || {};
     // фото заменили в Tilda (у нового фото новый адрес): показываем его с CDN Tilda, не дожидаясь пересборки
-    var src = tildaGallery(x), newPhotos = false;
-    if (src.length && JSON.stringify(src) !== JSON.stringify(p.src || [])) { newPhotos = !!p.src; p.src = src; p.images = src.map(tildaThumb); }
+    var src = tildaGallery(x), redraw = false;
+    if (src.length && JSON.stringify(src) !== JSON.stringify(p.src || [])) { redraw = !!p.src; p.src = src; p.images = src.map(tildaThumb); }
     var before = JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]);
+    var volBefore = volOf(p);
     p.price = tildaNum(x.price);
     p.old = tildaNum(x.priceold);
     p.qty = tildaStock(String(x.quantity == null ? '' : x.quantity).trim() !== '' ? x.quantity : ed0.quantity);
     p.mark = x.mark || '';
     p.opts = tildaOpts(x);
-    // 2 — поменялись фото (нужно перерисовать карточки), true — цены или остатки
-    return newPhotos ? 2 : JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]) !== before;
+    // характеристики: заполнили в Tilda — сразу видны в карточке и на плитке
+    p.chars = (x.characteristics || []).filter(function (c) { return c.title && c.value; }).map(function (c) { return [tildaText(c.title), tildaText(c.value)]; });
+    var pl = tildaNum(x.pack_x), pw = tildaNum(x.pack_y), ph = tildaNum(x.pack_z);
+    p.size = pl && pw && ph ? pl + '×' + pw + '×' + ph + ' мм' : '';
+    p.weight = tildaNum(x.pack_m == null ? ed0.pack_m : x.pack_m);
+    p.brand = tildaText(x.brand);
+    p.sku = String(x.sku || '').trim();
+    if (volOf(p) !== volBefore) redraw = true;
+    // 2 — поменялось то, что видно на плитке (фото, объём): нужно перерисовать карточки; true — цены или остатки
+    return redraw ? 2 : JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]) !== before;
   }
   // новый товар, появившийся в Tilda после сборки: фото берём прямо с её CDN
   function tildaNew(x, part) {

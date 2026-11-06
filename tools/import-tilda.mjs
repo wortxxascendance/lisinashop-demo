@@ -143,6 +143,10 @@ async function main() {
         src, // адреса фото в Tilda: витрина сверяет их с API и показывает новые фото сразу
         opts,
         weight: num(x.pack_m ?? ed0.pack_m),
+        // как в карточке Tilda: поля «Характеристики» (объём, вес), размеры упаковки, бренд
+        chars: (Array.isArray(x.characteristics) ? x.characteristics : []).filter((c) => c.title && c.value).map((c) => [text(c.title), text(c.value)]),
+        size: num(x.pack_x) && num(x.pack_y) && num(x.pack_z) ? `${num(x.pack_x)}×${num(x.pack_y)}×${num(x.pack_z)} мм` : '',
+        brand: text(x.brand),
         oldPath: x.url ? new URL(x.url).pathname : '',
         order: order++
       });
