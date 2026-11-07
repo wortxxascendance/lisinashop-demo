@@ -36,7 +36,10 @@
     badi: { title: 'Бады', lead: 'Активы и ингредиенты для создания уходовой косметики своими руками. У каждого указаны INCI, рекомендованный ввод и pH.',
       shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
     rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
-      shelves: [['', '315090565642']] }
+      shelves: [['', '315090565642']] },
+    /* Страница акции: только её товары. Запись последняя, чтобы товары серии оставались в разделе «Уход дома» */
+    old_money: { title: 'Твои волосы в стиле old money', lead: 'Акция 1–9 ноября. Скидка до 60% на серию домашнего ухода PILULYA с феромонами', nav: 'akzia',
+      shelves: [['Серия с феромонами', '607263580471']] }
   };
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
@@ -188,11 +191,12 @@
   }
 
   /* ---------- Карточка ---------- */
+  var SALE_MARK = 'Чёрная пятница до −50%'; // плашка на товарах со старой ценой
   function marks(p) {
     var out = '';
     if (p.mark === 'NEW') out += '<span class="mark">New</span>';
     else if (p.mark) out += '<span class="mark mark--sale">' + esc(p.mark.replace('-', '−')) + '</span>';
-    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
+    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale mark--event">' + SALE_MARK + '</span>';
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
@@ -402,7 +406,7 @@
     app.innerHTML = v + (r.name === 'checkout' || r.name === 'order' ? '' : supportView());
     if (r.name === 'checkout') afterCheckoutRender();
     if (r.name === 'order') startOrderPolling(r.oid);
-    var nav = r.name === 'section' ? r.key : r.name === 'page' ? r.slug : r.name;
+    var nav = r.name === 'section' ? SECTIONS[r.key].nav || r.key : r.name === 'page' ? r.slug : r.name;
     $all('[data-nav]').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-nav') === nav); });
     setupReveal(app);
     setupMagnetic(app);
@@ -465,7 +469,7 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-01', to: '2026-11-09', dates: '1–9 ноября', title: 'Твои волосы в стиле old money', sale: 'до 60%', text: 'на серию домашнего ухода PILULYA', page: 'pilulya', img: 'assets/img/promo/old-money.webp', bg: 'linear-gradient(180deg, #928a92, #999199, #999299, #9d959d, #ada5b1)', bgm: '#a49ba4' },
+    { from: '2026-11-01', to: '2026-11-09', dates: '1–9 ноября', title: 'Твои волосы в стиле old money', sale: 'до 60%', text: 'на серию домашнего ухода PILULYA', page: 'old_money', img: 'assets/img/promo/old-money.webp', bg: 'linear-gradient(180deg, #928a92, #999199, #999299, #9d959d, #ada5b1)', bgm: '#a49ba4' },
     { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', sale: 'до 60%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'pilulya_prof', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', product: '542109948603', bg: '#f9f9fb', bgm: '#ede6ed' },
@@ -500,9 +504,23 @@
       }).join('') + '</div>' + railNav('phero-track') + '</div>' : '') +
     '</section>';
   }
+  /* Фото на слайде квадратное, а высоту слайда задаёт самый длинный текст. Колонку с фото подгоняем под высоту,
+     иначе на ноутбуках фото уже слайда и его края срезаются */
+  function fitPhero() {
+    var track = document.getElementById('phero-track');
+    if (!track) return;
+    track.style.removeProperty('--h');
+    if (!window.matchMedia('(min-width: 861px)').matches) return;
+    // два прохода: с широкой колонкой фото текст может занять лишнюю строку; больше половины слайда фото не занимает
+    var slide = track.children[0];
+    for (var i = 0; i < 2; i++) track.style.setProperty('--h', Math.min(slide.offsetHeight, Math.round(slide.offsetWidth * 0.52)) + 'px');
+  }
+  window.addEventListener('resize', fitPhero);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitPhero);
   function setupPhero() {
     var track = document.getElementById('phero-track');
     if (!track) return;
+    fitPhero();
     var dots = $all('.phero__dots button');
     track.addEventListener('scroll', function () {
       var step = track.children[1] ? track.children[1].offsetLeft - track.children[0].offsetLeft : 1;
@@ -546,14 +564,16 @@
   }
 
   function promosSection(withLink) {
+    var set0 = byId['555292846813'];
     var set1 = find('Шампунь + Маска + Подарок');
     var set2 = find('КОЛОР СТРАХОВКА');
-    if (!set1 && !set2) return '';
+    if (!set0 && !set1 && !set2) return '';
     return '<section class="section"><div class="wrap">' +
       '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div>' + (withLink ? '<a class="link-arrow" href="' + U.page('akzia') + '">Все акции ' + icon('i-arrow') + '</a>' : '') + '</div>' +
-      '<div class="promos">' +
-        (set1 ? promo(set1, '', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.', 'assets/img/promo-shampoo-mask.webp') : '') +
-        (set2 ? promo(set2, 'promo--alt', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.') : '') +
+      '<div class="promos promos--3">' +
+        (set0 ? promo(set0, 'promo--set promo--mmp', 'Маска + Молочко + Протектор = Подарок (добавка в&nbsp;порошок)', 'Купи набор PILULYA PROFESSIONAL и&nbsp;получи добавку в&nbsp;порошок в&nbsp;подарок.', '', 'Подарочный набор') : '') +
+        (set1 ? promo(set1, 'promo--set promo--smf', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.') : '') +
+        (set2 ? promo(set2, 'promo--set promo--kolor', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.') : '') +
       '</div></div></section>';
   }
   // фото набора целиком (все банки в кадре), без обрезки; src — то же фото с белым фоном, если у исходного фон серый
@@ -1972,6 +1992,9 @@
     // фото заменили в Tilda (у нового фото новый адрес): показываем его с CDN Tilda, не дожидаясь пересборки
     var src = tildaGallery(x), redraw = false;
     if (src.length && JSON.stringify(src) !== JSON.stringify(p.src || [])) { redraw = !!p.src; p.src = src; p.images = src.map(tildaThumb); }
+    // название поменяли в Tilda: показываем новое, не дожидаясь пересборки (регистр и опечатку правит импорт, это не переименование)
+    var title = tildaText(x.title).replace(/PROFFESSIONAL/g, 'PROFESSIONAL');
+    if (title && norm(title) !== norm(p.title)) { p.title = title; redraw = true; }
     var before = JSON.stringify([p.price, p.old, p.qty, p.mark, p.opts]);
     var volBefore = volOf(p);
     p.price = tildaNum(x.price);
