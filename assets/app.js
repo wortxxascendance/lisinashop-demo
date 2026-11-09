@@ -94,8 +94,9 @@
     var c = (p.chars || []).filter(function (x) { return /^(объ[её]м|вес)$/i.test(x[0]); })[0];
     return c ? c[1] : '';
   }
-  /* Остаток как в Tilda: null — количество не ведётся, 0 — нет в наличии */
+  /* Остаток как в Tilda: null — количество не ведётся, 0 — нет в наличии. closed — товар снят с витрины в Tilda */
   function stockOf(p, opt) {
+    if (p.closed) return 0;
     var v = p.opts ? p.opts.values[opt || 0] : null;
     var q = v ? v.qty : p.qty;
     return q == null ? Infinity : q;
@@ -105,6 +106,7 @@
     for (var i = 0; i < p.opts.values.length; i++) if (stockOf(p, i) > 0) return i;
     return 0;
   }
+  function inStock(p) { return stockOf(p, firstOpt(p)) > 0; }
   function img(p, i) { return p.images[i || 0] || ''; }
   function imgTag(src, alt, extra) {
     return src ? '<img src="' + esc(asset(src)) + '" alt="' + esc(alt || '') + '" loading="lazy" decoding="async"' + (extra || '') + '>' : '';
@@ -472,8 +474,8 @@
     { from: '2026-11-01', to: '2026-11-09', dates: '1–9 ноября', title: 'Твои волосы в стиле old money', sale: 'до 60%', text: 'на серию домашнего ухода PILULYA', page: 'old_money', img: 'assets/img/promo/old-money.webp', bg: 'linear-gradient(180deg, #928a92, #999199, #999299, #9d959d, #ada5b1)', bgm: '#a49ba4' },
     { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', sale: 'до 60%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'pilulya_prof', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
-    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', product: '542109948603', bg: '#f9f9fb', bgm: '#ede6ed' },
-    { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', product: '320576766532', bg: 'linear-gradient(180deg, #edebea, #eeecea, #f1efee, #f5f5f5, #fafafa)', bgm: '#fcfbfc' }
+    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
+    { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
   function isoDate(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function promoHero(withH1) {
@@ -531,15 +533,12 @@
 
   /* Подарочные наборы на главной: в общем каталоге они теряются */
   function setsSection() {
-    var creams = byId['542109948603'];
-    var cloud = byId['279717742663'];
-    if (!creams && !cloud) return '';
-    return '<section class="section section--tight"><div class="wrap">' +
+    var cards = promo(byId['542109948603'], 'promo--set promo--creams', 'Набор из&nbsp;3 парфюмированных кремов', 'Три аромата с&nbsp;феромонами: «Амазонка-59», «Карнавал-68» и&nbsp;«Бразильянка-62». Для рук и&nbsp;тела, по&nbsp;50&nbsp;мл.', '', 'Подарочный набор') +
+      promo(byId['279717742663'], 'promo--set promo--cloud', 'Набор для волос Cloud of Love', 'Три средства с&nbsp;феромонами для комплексного ухода: мягкость, гладкость и&nbsp;блеск.', '', 'Подарочный набор');
+    if (!cards) return '';
+    return '<section class="section section--tight" data-sets="sets"><div class="wrap">' +
       '<div class="section-head"><div><p class="eyebrow">Подарочные наборы</p><h2 class="h2">Кремы и&nbsp;Cloud of Love</h2></div><a class="link-arrow" href="' + U.section('pilulya') + '">Вся серия ' + icon('i-arrow') + '</a></div>' +
-      '<div class="promos">' +
-        (creams ? promo(creams, 'promo--set promo--creams', 'Набор из&nbsp;3 парфюмированных кремов', 'Три аромата с&nbsp;феромонами: «Амазонка-59», «Карнавал-68» и&nbsp;«Бразильянка-62». Для рук и&nbsp;тела, по&nbsp;50&nbsp;мл.', '', 'Подарочный набор') : '') +
-        (cloud ? promo(cloud, 'promo--set promo--cloud', 'Набор для волос Cloud of Love', 'Три средства с&nbsp;феромонами для комплексного ухода: мягкость, гладкость и&nbsp;блеск.', '', 'Подарочный набор') : '') +
-      '</div></div></section>';
+      '<div class="promos">' + cards + '</div></div></section>';
   }
 
   function kitSection() {
@@ -564,20 +563,20 @@
   }
 
   function promosSection(withLink) {
-    var set0 = byId['555292846813'];
-    var set1 = find('Шампунь + Маска + Подарок');
-    var set2 = find('КОЛОР СТРАХОВКА');
-    if (!set0 && !set1 && !set2) return '';
-    return '<section class="section"><div class="wrap">' +
+    var cards = [
+      promo(byId['555292846813'], 'promo--set promo--mmp', 'Маска + Молочко + Протектор = Подарок (добавка в&nbsp;порошок)', 'Купи набор PILULYA PROFESSIONAL и&nbsp;получи добавку в&nbsp;порошок в&nbsp;подарок.', '', 'Подарочный набор'),
+      promo(find('Шампунь + Маска + Подарок'), 'promo--set promo--smf', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.'),
+      promo(find('КОЛОР СТРАХОВКА'), 'promo--set promo--kolor', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.')
+    ].filter(Boolean);
+    if (!cards.length) return '';
+    return '<section class="section" data-sets="' + (withLink ? 'promos-link' : 'promos') + '"><div class="wrap">' +
       '<div class="section-head"><div><p class="eyebrow">Акции</p><h2 class="h2">Выгодные наборы <span class="brand">PILULYA</span></h2></div>' + (withLink ? '<a class="link-arrow" href="' + U.page('akzia') + '">Все акции ' + icon('i-arrow') + '</a>' : '') + '</div>' +
-      '<div class="promos promos--3">' +
-        (set0 ? promo(set0, 'promo--set promo--mmp', 'Маска + Молочко + Протектор = Подарок (добавка в&nbsp;порошок)', 'Купи набор PILULYA PROFESSIONAL и&nbsp;получи добавку в&nbsp;порошок в&nbsp;подарок.', '', 'Подарочный набор') : '') +
-        (set1 ? promo(set1, 'promo--set promo--smf', 'Купи маску + шампунь PROF — филлер в подарок', 'На 15% дешевле, чем на WB. Шампунь и маска серии PROFESSIONAL и филлер Molecular Lipid в подарок.') : '') +
-        (set2 ? promo(set2, 'promo--set promo--kolor', 'Колор страховка 3 + 1', 'Профессиональный пакет добавок PILULYA защищает волосы при обесцвечивании, окрашивании и тонировании.') : '') +
-      '</div></div></section>';
+      '<div class="promos' + (cards.length === 3 ? ' promos--3' : '') + '">' + cards.join('') + '</div></div></section>';
   }
-  // фото набора целиком (все банки в кадре), без обрезки; src — то же фото с белым фоном, если у исходного фон серый
+  // фото набора целиком (все банки в кадре), без обрезки; src — то же фото с белым фоном, если у исходного фон серый.
+  // набора нет в продаже — карточки нет
   function promo(p, cls, title, text, src, badge) {
+    if (!p || !inStock(p)) return '';
     return '<article class="promo ' + cls + '"><div class="promo__text">' +
       '<span class="promo__limit">' + icon('i-gift') + ' ' + (badge || 'Всего 100 наборов') + '</span>' +
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
@@ -2090,11 +2089,22 @@
       PRODUCTS.push(p); byId[id] = p; bySlug[p.slug] = p;
       added = true;
     });
-    // товары, снятые с витрины в Tilda, убираем из списков (в корзине они остаются видны)
-    for (var i = PRODUCTS.length - 1; i >= 0; i--) if (!items[PRODUCTS[i].id]) { PRODUCTS.splice(i, 1); added = true; }
+    // товары, снятые с витрины в Tilda, убираем из списков и закрываем для покупки (в корзине они видны до оформления, при оформлении убираются)
+    for (var i = PRODUCTS.length - 1; i >= 0; i--) if (!items[PRODUCTS[i].id]) { PRODUCTS[i].closed = true; PRODUCTS.splice(i, 1); added = true; }
     if (JSON.stringify(parts) !== JSON.stringify(PARTS)) { PARTS = parts; added = true; }
-    if (changed || added) refreshStock();
+    if (changed || added) { refreshStock(); refreshSets(); }
     if (added) refreshShelves();
+  }
+  // блоки наборов нарисованы из снимка каталога: закрытый или раскупленный набор убираем, цены ставим свежие
+  function refreshSets() {
+    $all('[data-sets]', app).forEach(function (s) {
+      var kind = s.getAttribute('data-sets');
+      var tmp = document.createElement('div');
+      tmp.innerHTML = kind === 'sets' ? setsSection() : promosSection(kind === 'promos-link');
+      var fresh = tmp.firstChild;
+      if (fresh) { s.parentNode.replaceChild(fresh, s); setupReveal(fresh); }
+      else s.parentNode.removeChild(s);
+    });
   }
   // состав полок поменялся: перерисовываем полки открытого раздела, не трогая остальную страницу (формы, прокрутку)
   function refreshShelves() {

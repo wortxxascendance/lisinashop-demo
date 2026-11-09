@@ -1008,6 +1008,7 @@ html.lenis, html.lenis body { height: auto; }
 .promo--mmp { background: #e3e2e7; }
 .promo--smf { background: #f1f1f3; }
 .promo--kolor { background: #efeef3; }
+.promos > .promo:only-child { grid-column: 1 / -1; } /* остальные наборы закрыты: без пустой половины ряда */
 @media (min-width: 1061px) {
   .promos--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .promos--3 .promo { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
