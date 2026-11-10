@@ -179,7 +179,7 @@ p { margin: 0; }
 .pslide__date b.is-now { background: var(--ink); color: var(--white); }
 .pslide__title { font-family: var(--f-display); font-size: clamp(30px, min(3.8vw, 6.8svh), 56px); font-weight: 400; line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
 .pslide__sale { display: inline-flex; align-items: center; gap: .28em; padding: .14em .42em .16em; border-radius: var(--r-m); background: var(--rose); font: 700 clamp(44px, min(5.4vw, 9svh), 80px)/1 var(--f-body); letter-spacing: -.03em; white-space: nowrap; }
-.pslide__sale small { font-size: max(14px, .23em); font-weight: 600; letter-spacing: 0; }
+.pslide__sale small { font-size: max(14px, .23em); font-weight: 600; letter-spacing: 0; white-space: normal; max-width: 6em; line-height: 1.15; } /* «Чёрная пятница» в две строки, чтобы плашка влезала в узкий телефон */
 .pslide__lead { font-size: clamp(15px, 1.35vw, 19px); line-height: 1.4; max-width: 44ch; }
 .pslide__media { position: relative; display: block; min-width: 0; }
 .pslide__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%); mask-image: linear-gradient(90deg, transparent, #000 10%); }
@@ -240,8 +240,10 @@ p { margin: 0; }
 .mark { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .08em; background: var(--ink); color: var(--white); text-transform: uppercase; line-height: 1.4; }
 .mark--sale { background: var(--rose-deep); }
 .mark--soft { background: var(--white); color: var(--ink); }
+.mark--event { font-size: 12px; letter-spacing: .01em; text-transform: none; border-radius: 13px; }
 @media (max-width: 560px) {
   .card__marks { top: 8px; left: 8px; right: 56px; }
+  .mark--event { padding: 2px 7px; font-size: 10px; line-height: 1.3; border-radius: 9px; }
 }
 .card__fav { position: absolute; top: 8px; right: 8px; z-index: 1; background: rgba(255, 255, 255, .82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .card__fav:hover { background: var(--white); }

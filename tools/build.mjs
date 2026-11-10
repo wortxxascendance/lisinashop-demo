@@ -27,7 +27,7 @@ const SITE = String(val('--site', process.env.SITE_URL || (DEMO ? 'https://wortx
 const API = DEMO ? '' : '/api';
 const PRERENDER = !has('--no-prerender');
 
-const SECTION_ROUTES = ['pilulya_prof', 'pilulya', 'badi', 'rezept', 'akzia'];
+const SECTION_ROUTES = ['pilulya_prof', 'pilulya', 'badi', 'rezept', 'akzia', 'black_akzia'];
 const PAGE_ROUTES = ['payment', 'contakt', 'oferta', 'politika', 'politika-konfidenczialnosti', 'garant'];
 const MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
 // адрес окна товара, как в assets/app.js (productPath)

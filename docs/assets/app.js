@@ -36,8 +36,15 @@
     badi: { title: 'Бады', lead: 'Активы и ингредиенты для создания уходовой косметики своими руками. У каждого указаны INCI, рекомендованный ввод и pH.',
       shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
     rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
-      shelves: [['', '315090565642']] }
+      shelves: [['', '315090565642']] },
+    /* Страница акции «Попадай в цвет»: только товары группы Tilda «АКЦИЯ» (/black_akzia), в её порядке.
+       Запись последняя, чтобы товары оставались в разделе Pilulya Prof */
+    black_akzia: { title: 'Попадай в цвет через восстановление структуры волос', lead: 'Акция 10–16 ноября. Профессиональный уход PILULYA для работы и восстановления: филлер, шампунь, маска, лосьон и добавки.', nav: 'akzia',
+      shelves: [['', '801934632263']] }
   };
+  var BLACK_PART = '801934632263', BLACK_MARK = 'Чёрная пятница до −50%'; // плашка на товарах акции
+  // состав группы на 10.11, пока не пришёл ответ Tilda (потом берётся из Tilda)
+  if (!PARTS[BLACK_PART]) PARTS[BLACK_PART] = ['595861466273', '428465001442', '135759382182', '339422260332', '708393394762', '368966532082', '354545582002', '230408872492'];
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
   var SALE_LEAD = 'Выгодные наборы PILULYA. Количество акционных наборов ограничено.';
@@ -194,7 +201,8 @@
     var out = '';
     if (p.mark === 'NEW') out += '<span class="mark">New</span>';
     else if (p.mark) out += '<span class="mark mark--sale">' + esc(p.mark.replace('-', '−')) + '</span>';
-    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
+    if ((PARTS[BLACK_PART] || []).indexOf(p.id) !== -1) out += '<span class="mark mark--sale mark--event">' + BLACK_MARK + '</span>';
+    else if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
@@ -468,7 +476,7 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', sale: 'до 60%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'pilulya_prof', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
+    { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', saleLabel: 'Чёрная пятница', sale: 'до 50%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'black_akzia', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
@@ -489,7 +497,7 @@
           '<div class="pslide__text">' +
             '<p class="pslide__date"><b' + (now ? ' class="is-now"' : '') + '>' + label + '</b>' + (a.dates ? '<span>' + a.dates + '</span>' : '') + '</p>' +
             '<h2 class="pslide__title">' + esc(a.title) + '</h2>' +
-            (a.sale ? '<p class="pslide__sale"><small>Скидка</small>' + a.sale + '</p>' : '') +
+            (a.sale ? '<p class="pslide__sale"><small>' + (a.saleLabel || 'Скидка') + '</small>' + a.sale + '</p>' : '') +
             '<p class="pslide__lead">' + esc(a.text) + '</p>' +
             '<a class="btn" href="' + U.section(a.page) + '">Смотреть товары ' + icon('i-arrow') + '</a>' +
           '</div>' +
@@ -2042,6 +2050,7 @@
   }
   function syncTilda() {
     var ids = Object.keys(PARTS);
+    Object.keys(SECTIONS).forEach(function (k) { SECTIONS[k].shelves.forEach(function (sh) { if (ids.indexOf(sh[1]) === -1) ids.push(sh[1]); }); });
     if (PRERENDER || !(TILDA || DEMO) || !window.fetch || !window.Promise || !ids.length) return;
     var rec = document.getElementById('allrecords');
     var project = rec && rec.getAttribute('data-tilda-project-id');
@@ -2065,7 +2074,7 @@
       // Новые разделы магазина Tilda: показываем полкой на странице, к которой раздел привязан в Tilda,
       // если в нём есть товары, которых нет на известных полках (служебные разделы-копии вроде «Скидка бады» пропускаем)
       var extra = (Array.isArray(both[1]) ? both[1] : []).filter(function (s) {
-        return s && s.uid && !PARTS[s.uid] && !s.hideonpublic && sectionOfUrl(s.url);
+        return s && s.uid && !PARTS[s.uid] && ids.indexOf(String(s.uid)) === -1 && !s.hideonpublic && sectionOfUrl(s.url);
       });
       return Promise.all(extra.map(function (s) { return tildaPart(s.uid); })).then(function (more) {
         more.forEach(function (j, i) {
