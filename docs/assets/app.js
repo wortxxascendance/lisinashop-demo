@@ -36,10 +36,7 @@
     badi: { title: 'Бады', lead: 'Активы и ингредиенты для создания уходовой косметики своими руками. У каждого указаны INCI, рекомендованный ввод и pH.',
       shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
     rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
-      shelves: [['', '315090565642']] },
-    /* Страница акции: только её товары. Запись последняя, чтобы товары серии оставались в разделе «Уход дома» */
-    old_money: { title: 'Твои волосы в стиле old money', lead: 'Акция 1–9 ноября. Скидка до 60% на серию домашнего ухода PILULYA с феромонами', nav: 'akzia',
-      shelves: [['Серия с феромонами', '607263580471']] }
+      shelves: [['', '315090565642']] }
   };
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
@@ -193,12 +190,11 @@
   }
 
   /* ---------- Карточка ---------- */
-  var SALE_MARK = 'Чёрная пятница до −50%'; // плашка на товарах со старой ценой
   function marks(p) {
     var out = '';
     if (p.mark === 'NEW') out += '<span class="mark">New</span>';
     else if (p.mark) out += '<span class="mark mark--sale">' + esc(p.mark.replace('-', '−')) + '</span>';
-    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale mark--event">' + SALE_MARK + '</span>';
+    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
@@ -262,6 +258,7 @@
       if (rel === 'catalog') return { name: 'section', key: 'pilulya_prof' };
       if (rel === 'delivery') return { name: 'page', slug: 'payment' };
       if (rel === 'contacts') return { name: 'contakt' };
+      if (rel === 'old_money') return { name: 'akzia' }; // акция 1–9 ноября закончилась, ссылки на неё ведут в «Акции»
     }
     if (parts[0] === 'catalog' && parts.length === 2) {
       if (parts[1] === 'sale') return { name: 'akzia' };
@@ -471,7 +468,6 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-01', to: '2026-11-09', dates: '1–9 ноября', title: 'Твои волосы в стиле old money', sale: 'до 60%', text: 'на серию домашнего ухода PILULYA', page: 'old_money', img: 'assets/img/promo/old-money.webp', bg: 'linear-gradient(180deg, #928a92, #999199, #999299, #9d959d, #ada5b1)', bgm: '#a49ba4' },
     { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', sale: 'до 60%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'pilulya_prof', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
@@ -1954,6 +1950,7 @@
     var u;
     try { u = new URL(a.href, location.href); } catch (x) { return; }
     if (u.origin !== location.origin || u.pathname.indexOf(BASE) !== 0) return;
+    if (/^\/members(\/|$)/.test(u.pathname)) return; // вход в личный кабинет Tilda
     if (u.hash && u.pathname === location.pathname) return;
     if (/\.[a-z0-9]{2,5}$/i.test(u.pathname)) return;
     e.preventDefault();
@@ -2141,5 +2138,8 @@
   updateBadges();
   boot();
   if (TILDA) setInterval(function () { updateBadges(); }, 2000); // корзина Tilda меняется своими кнопками
+  /* Личный кабинет покупателя (Tilda Members): шапка Tilda со своим значком спрятана, поэтому значок в нашей шапке.
+     Ссылку #openmembersbar перехватывает скрипт Tilda: открывает окно входа или меню кабинета */
+  if (TILDA && $('[data-account]')) $('[data-account]').hidden = false;
   window.__lsRendered = true; // сигнал для tools/build.mjs: страница отрисована, можно сохранять HTML
 })();
