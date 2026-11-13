@@ -77,6 +77,35 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  /* Журнал на экране для проверки на телефоне: открыть сайт с ?lsdebug=1 (до закрытия вкладки), выключить — ?lsdebug=0 */
+  var DEBUG = false;
+  try {
+    var dq = location.search.match(/[?&]lsdebug=([01])/);
+    if (dq) sessionStorage.setItem('ls_debug', dq[1]);
+    DEBUG = sessionStorage.getItem('ls_debug') === '1';
+  } catch (e) { DEBUG = /[?&]lsdebug=1/.test(location.search); }
+  var dbgBox = null;
+  function dbg(msg) {
+    if (!DEBUG) return;
+    if (!dbgBox) {
+      dbgBox = document.createElement('pre');
+      dbgBox.style.cssText = 'position:fixed;left:4px;right:4px;bottom:4px;z-index:2147483647;max-height:38vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.82);color:#9f9;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;border-radius:8px;pointer-events:none';
+      document.body.appendChild(dbgBox);
+    }
+    var t = new Date();
+    dbgBox.textContent = (dbgBox.textContent + '\n' + t.toTimeString().slice(0, 8) + '.' + ('00' + t.getMilliseconds()).slice(-3) + ' ' + msg).split('\n').slice(-40).join('\n').replace(/^\n/, '');
+    dbgBox.scrollTop = dbgBox.scrollHeight;
+  }
+  if (DEBUG) {
+    window.addEventListener('error', function (e) { dbg('ERROR ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno); });
+    window.addEventListener('unhandledrejection', function (e) { dbg('REJECT ' + (e.reason && e.reason.message || e.reason)); });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href], [data-action]');
+      dbg('click ' + (a ? (a.getAttribute('href') || '[' + a.getAttribute('data-action') + ']') : e.target.tagName) + (e.defaultPrevented ? ' (prevented)' : ''));
+    }, true);
+    dbg(navigator.userAgent.replace(/^Mozilla\/5\.0 /, '') + ' ' + innerWidth + 'x' + innerHeight + ' hash=' + location.hash);
+  }
+
   function money(n) { return Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ₽'; }
   function norm(s) { return String(s || '').toLowerCase().replace(/ё/g, 'е'); }
   function icon(id, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#' + id + '"/></svg>'; }
@@ -1892,11 +1921,16 @@
   window.addEventListener('scroll', onScroll, { passive: true });
 
   /* Переходы между страницами без перезагрузки */
+  // ошибка отрисовки не должна оставлять страницу полупрозрачной (view-leave); в журнал ?lsdebug=1 она тоже попадает
+  function safeRender(resetScroll) {
+    try { render(resetScroll); }
+    catch (err) { dbg('RENDER ' + err.message + ' ' + String(err.stack || '').split('\n').slice(0, 3).join(' | ')); setTimeout(function () { throw err; }); }
+  }
   function transitionTo() {
-    if (REDUCED) { render(true); return; }
+    if (REDUCED) { safeRender(true); return; }
     app.classList.add('view-leave');
     setTimeout(function () {
-      render(true);
+      safeRender(true);
       app.classList.remove('view-leave');
       app.classList.remove('view-enter');
       void app.offsetWidth;
@@ -1911,21 +1945,41 @@
     else productDepth = r.name === 'product' ? Math.max(0, productDepth - 1) : 0;
     navPushed = false;
     var swap = r.name === 'product' ? !!renderedKey : productOpen && routeKey(r) === renderedKey;
-    if (swap) render(false); else transitionTo();
+    dbg('route ' + routeKey(r) + (swap ? ' (окно)' : ''));
+    if (swap) safeRender(false); else transitionTo();
   }
   function closeProduct() {
     if (productDepth > 0) { var n = productDepth; productDepth = 0; history.go(-n); return; }
     var url = urlFor(renderedRoute || { name: 'home' });
-    if (HASH) { location.replace(url.charAt(0) === '#' ? url : '#/'); return; }
+    if (HASH) { setHash(url.charAt(0) === '#' ? url : '#/', true); return; }
     history.replaceState(null, '', url);
     onRouteChange();
+  }
+  /* Адрес #/… меняем сами и сразу перерисовываем страницу, не дожидаясь hashchange:
+     на части новых iPhone событие не доходило, и поиск закрывался, а страница оставалась прежней */
+  var handledHash = location.hash;
+  function setHash(target, replace) {
+    try { history[replace ? 'replaceState' : 'pushState'](null, '', target); }
+    catch (x) { dbg('history: ' + x.message); if (replace) location.replace(target); else location.hash = target.slice(1); return; }
+    handledHash = location.hash;
+    dbg((replace ? 'replace ' : 'push ') + target);
+    onRouteChange();
+  }
+  function syncHash(e) {
+    var h = location.hash;
+    if (h === handledHash) return;
+    // корзина Tilda сама ставит и стирает #tcart/#opencart через replaceState: пустой адрес после её якоря — не переход на главную
+    if (e.type === 'check' && (!h || h === '#') && handledHash.indexOf('#/') !== 0) { handledHash = h; return; }
+    handledHash = h;
+    dbg(e.type + ' ' + h);
+    if (!h || h === '#' || h.indexOf('#/') === 0) onRouteChange();
   }
   function navigate(url) {
     if (HASH) {
       var target = url.charAt(0) === '#' ? url : '#/' + url.replace(/^\/+/, '');
       if (target === location.hash || (target === '#/' && !location.hash)) { if (!productOpen) scrollTop(); return; }
       navPushed = true;
-      location.hash = target.slice(1); // дальше сработает hashchange
+      setHash(target, false);
       return;
     }
     var u = new URL(url, location.href);
@@ -1935,10 +1989,11 @@
     onRouteChange();
   }
   if (HASH) {
-    window.addEventListener('hashchange', function () {
-      var h = location.hash;
-      if (!h || h === '#' || h.indexOf('#/') === 0) onRouteChange();
-    });
+    // назад/вперёд и ручная смена адреса; свои переходы syncHash пропускает (адрес уже обработан)
+    window.addEventListener('hashchange', syncHash);
+    window.addEventListener('popstate', syncHash);
+    // страховка, если события так и не пришли (назад в Safari, закрытие окна товара через history.go)
+    setInterval(function () { if (location.hash !== handledHash) syncHash({ type: 'check' }); }, 400);
     // свои ссылки #/… обрабатываем раньше скриптов Tilda: у неё свои обработчики якорей
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a[href^="#/"]');
