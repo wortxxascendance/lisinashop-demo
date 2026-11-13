@@ -41,7 +41,7 @@
   // сначала стили, потом разметка: так страница не мигнёт без оформления
   var link = d.createElement('link');
   link.rel = 'stylesheet';
-  link.href = "https://wortxxascendance.github.io/lisinashop-demo/assets/styles.css?v=d4ebf204";
+  link.href = "https://wortxxascendance.github.io/lisinashop-demo/assets/styles.css?v=b1177916";
   var started = false;
   function start() { if (started) return; started = true; if (d.body) mount(); else d.addEventListener('DOMContentLoaded', mount); }
   link.onload = start;

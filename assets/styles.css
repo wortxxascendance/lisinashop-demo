@@ -33,7 +33,9 @@
   color-scheme: light;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+/* html * сильнее, чем * в tilda-grid-3.0.min.css (content-box): Tilda иногда грузит его после нас
+   (часто на новых iPhone), и без этого все блоки становились шире экрана */
+html *, html *::before, html *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 html:not(.js) { scroll-behavior: smooth; }
 body {
