@@ -40,7 +40,7 @@
     /* Страница акции «Рапунцель» (16–22 ноября): филлер, серии Cloud of Love и для роста волос, без подарочного набора.
        Запись после «Уход дома», чтобы новые товары этих групп попадали в «Уход дома». skip/only — см. shelfItems */
     rapunzel: { title: 'Хочешь волосы как у Рапунцель?', lead: 'Акция 16–22 ноября. Филлер, серия Cloud of Love и серия для роста волос PILULYA по специальным ценам.', nav: 'akzia',
-      shelves: [['Филлер', '607263580471', { only: ['595861466273'] }], ['Серия Cloud of Love', '724367431762', { skip: ['279717742663'] }], ['Серия для роста волос и постковид', '451135886322']] }
+      shelves: [['Серия Cloud of Love', '724367431762', { skip: ['279717742663'], add: ['595861466273'] }],['Серия для роста волос и постковид', '451135886322']] }
   };
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
@@ -486,9 +486,11 @@
     var y = el.getBoundingClientRect().top + (window.scrollY || 0) - (header.offsetHeight + 16);
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
   }
-  // o — третий элемент полки в SECTIONS: { skip: [id…] } убирает товары группы, { only: [id…] } оставляет только эти
+  // o — третий элемент полки в SECTIONS: { skip: [id…] } убирает товары группы, { only: [id…] } оставляет только эти,
+  // { add: [id…] } ставит в начало полки товары из других групп
   function shelfItems(part, o) {
-    return (PARTS[part] || []).map(function (id) { return byId[id]; }).filter(function (p) {
+    var ids = (o && o.add ? o.add : []).concat(PARTS[part] || []);
+    return ids.filter(function (id, i) { return ids.indexOf(id) === i; }).map(function (id) { return byId[id]; }).filter(function (p) {
       return p && (!o || ((!o.skip || o.skip.indexOf(p.id) === -1) && (!o.only || o.only.indexOf(p.id) !== -1)));
     });
   }
@@ -519,7 +521,7 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
+    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 50%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
