@@ -37,14 +37,11 @@
       shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
     rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
       shelves: [['', '315090565642']] },
-    /* Страница акции «Попадай в цвет»: только товары группы Tilda «АКЦИЯ» (/black_akzia), в её порядке.
-       Запись последняя, чтобы товары оставались в разделе Pilulya Prof */
-    black_akzia: { title: 'Попадай в цвет через восстановление структуры волос', lead: 'Акция 10–16 ноября. Профессиональный уход PILULYA для работы и восстановления: филлер, шампунь, маска, лосьон и добавки.', nav: 'akzia',
-      shelves: [['', '801934632263']] }
+    /* Страница акции «Рапунцель» (16–22 ноября): серии Cloud of Love и для роста волос, без подарочного набора.
+       Запись после «Уход дома», чтобы новые товары этих групп попадали в «Уход дома». skip — товары полки, которых нет в акции */
+    rapunzel: { title: 'Хочешь волосы как у Рапунцель?', lead: 'Акция 16–22 ноября. Серия Cloud of Love и серия для роста волос PILULYA по специальным ценам.', nav: 'akzia',
+      shelves: [['Серия Cloud of Love', '724367431762', { skip: ['279717742663'] }], ['Серия для роста волос и постковид', '451135886322']] }
   };
-  var BLACK_PART = '801934632263', BLACK_MARK = 'Чёрная пятница до −50%'; // плашка на товарах акции
-  // состав группы на 10.11, пока не пришёл ответ Tilda (потом берётся из Tilda)
-  if (!PARTS[BLACK_PART]) PARTS[BLACK_PART] = ['595861466273', '428465001442', '135759382182', '339422260332', '708393394762', '368966532082', '354545582002', '230408872492'];
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
   var SALE_LEAD = 'Выгодные наборы PILULYA. Количество акционных наборов ограничено.';
@@ -230,8 +227,7 @@
     var out = '';
     if (p.mark === 'NEW') out += '<span class="mark">New</span>';
     else if (p.mark) out += '<span class="mark mark--sale">' + esc(p.mark.replace('-', '−')) + '</span>';
-    if ((PARTS[BLACK_PART] || []).indexOf(p.id) !== -1) out += '<span class="mark mark--sale mark--event">' + BLACK_MARK + '</span>';
-    else if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
+    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
@@ -295,7 +291,8 @@
       if (rel === 'catalog') return { name: 'section', key: 'pilulya_prof' };
       if (rel === 'delivery') return { name: 'page', slug: 'payment' };
       if (rel === 'contacts') return { name: 'contakt' };
-      if (rel === 'old_money') return { name: 'akzia' }; // акция 1–9 ноября закончилась, ссылки на неё ведут в «Акции»
+      // закончившиеся акции (old_money 1–9 ноября, «Попадай в цвет» 10–16 ноября): ссылки на них ведут в «Акции»
+      if (rel === 'old_money' || rel === 'black_akzia') return { name: 'akzia' };
     }
     if (parts[0] === 'catalog' && parts.length === 2) {
       if (parts[1] === 'sale') return { name: 'akzia' };
@@ -505,8 +502,7 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-10', to: '2026-11-16', dates: '10–16 ноября', title: 'Попадай в цвет через восстановление структуры волос', saleLabel: 'Чёрная пятница', sale: 'до 50%', text: 'Собери профессиональный уход для работы и восстановления: филлер, добавки, шампунь, маска, лосьон', page: 'black_akzia', img: 'assets/img/promo/v-cvet.webp', bg: 'linear-gradient(180deg, #bbb6ba, #c2bdc3, #c0bac1, #bcb7bd, #b4adb2)', bgm: '#c1bbc1' },
-    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'pilulya', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
+    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
@@ -689,7 +685,10 @@
   /* ---------- Разделы каталога: полки как на страницах Tilda, по 3 товара в ряд ---------- */
   function sectionView(key) {
     var s = SECTIONS[key];
-    var shelves = s.shelves.map(function (sh) { return { title: sh[0], id: sh[1], list: shelfItems(sh[1]) }; }).filter(function (sh) { return sh.list.length; });
+    var shelves = s.shelves.map(function (sh) {
+      var skip = (sh[2] && sh[2].skip) || [];
+      return { title: sh[0], id: sh[1], list: shelfItems(sh[1]).filter(function (p) { return skip.indexOf(p.id) === -1; }) };
+    }).filter(function (sh) { return sh.list.length; });
     var jump = shelves.length > 1 ? '<div class="cat-tabs" aria-label="Разделы страницы">' + shelves.map(function (sh) {
       return '<button type="button" class="chip" data-action="jump" data-target="shelf-' + sh.id + '">' + esc(sh.title) + ' <span class="count">' + sh.list.length + '</span></button>';
     }).join('') + '</div>' : '';
@@ -1092,6 +1091,11 @@
         // Как кнопка магазина Tilda: uid — вариант товара (по нему корзина проверяет остаток), gen_uid — сам товар
         var prod = { name: p.title, price: optPrice(p, l.opt), quantity: Math.min(l.qty, inv), uid: Number((v && v.uid) || p.id), gen_uid: Number(p.id), img: absUrl(img(p, optImg(p, l.opt))) };
         if (inv !== Infinity) prod.inv = inv;
+        // lid (номер товара каталога) и упаковку кладёт в заказ и кнопка Tilda. 14.11 выяснилось, что купленные через нас
+        // сборники не приходят на почту и в личный кабинет; lid у нас не было — добавлен, чтобы заказ не отличался от родного
+        prod.lid = String(p.id);
+        if (p.pack && p.pack.label) { prod.pack_label = p.pack.label; prod.pack_x = String(p.pack.x); prod.pack_y = String(p.pack.y); prod.pack_z = String(p.pack.z); }
+        if (p.weight) prod.pack_m = String(p.weight);
         var parts = Object.keys(PARTS).filter(function (k) { return PARTS[k].indexOf(p.id) !== -1; });
         if (parts.length) prod.part_uids = parts;
         var rec = /tproduct\/(\d+)-/.exec(p.oldPath || '');
@@ -2066,6 +2070,7 @@
     var pl = tildaNum(x.pack_x), pw = tildaNum(x.pack_y), ph = tildaNum(x.pack_z);
     p.size = pl && pw && ph ? pl + '×' + pw + '×' + ph + ' мм' : '';
     p.weight = tildaNum(x.pack_m == null ? ed0.pack_m : x.pack_m);
+    p.pack = { label: String(x.pack_label || ''), x: pl, y: pw, z: ph }; // габариты как их отдаёт Tilda, для корзины
     p.brand = tildaText(x.brand);
     p.sku = String(x.sku || '').trim();
     if (volOf(p) !== volBefore) redraw = true;
