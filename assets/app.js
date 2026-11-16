@@ -37,10 +37,10 @@
       shelves: [['Бады', '957178389161'], ['Увлажняющие функциональные активы', '929553320771'], ['Масла для волос', '934719894231'], ['ПАВ и эмульгаторы', '633110686221'], ['Протеины и аминокислоты', '193185097271'], ['Липиды', '795498095471'], ['Водорастворимые и масляные экстракты CO2', '194568811531'], ['Силиконы и плёнкообразователи', '352549965931'], ['Консерванты, загустители, кислоты', '891778197451'], ['Базовые компоненты, Teaser', '838877989631'], ['Бокс тритментолога', '795663430411']] },
     rezept: { title: 'Сборники', lead: 'Авторские рецепты и протоколы Татьяны Лисиной в электронном формате. Ссылка приходит на почту сразу после оплаты.',
       shelves: [['', '315090565642']] },
-    /* Страница акции «Рапунцель» (16–22 ноября): серии Cloud of Love и для роста волос, без подарочного набора.
-       Запись после «Уход дома», чтобы новые товары этих групп попадали в «Уход дома». skip — товары полки, которых нет в акции */
-    rapunzel: { title: 'Хочешь волосы как у Рапунцель?', lead: 'Акция 16–22 ноября. Серия Cloud of Love и серия для роста волос PILULYA по специальным ценам.', nav: 'akzia',
-      shelves: [['Серия Cloud of Love', '724367431762', { skip: ['279717742663'] }], ['Серия для роста волос и постковид', '451135886322']] }
+    /* Страница акции «Рапунцель» (16–22 ноября): филлер, серии Cloud of Love и для роста волос, без подарочного набора.
+       Запись после «Уход дома», чтобы новые товары этих групп попадали в «Уход дома». skip/only — см. shelfItems */
+    rapunzel: { title: 'Хочешь волосы как у Рапунцель?', lead: 'Акция 16–22 ноября. Филлер, серия Cloud of Love и серия для роста волос PILULYA по специальным ценам.', nav: 'akzia',
+      shelves: [['Филлер', '607263580471', { only: ['595861466273'] }], ['Серия Cloud of Love', '724367431762', { skip: ['279717742663'] }], ['Серия для роста волос и постковид', '451135886322']] }
   };
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
@@ -227,7 +227,9 @@
     var out = '';
     if (p.mark === 'NEW') out += '<span class="mark">New</span>';
     else if (p.mark) out += '<span class="mark mark--sale">' + esc(p.mark.replace('-', '−')) + '</span>';
-    if (p.old > 0 && !/^-/.test(p.mark)) out += '<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
+    var pm = promoMark(p);
+    if (pm) out += '<span class="mark mark--sale mark--event">' + esc(pm) + '</span>';
+    else if (p.old > 0 && !/^-/.test(p.mark)) out +='<span class="mark mark--sale">−' + Math.round((1 - p.price / p.old) * 100) + '%</span>';
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
@@ -484,7 +486,22 @@
     var y = el.getBoundingClientRect().top + (window.scrollY || 0) - (header.offsetHeight + 16);
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
   }
-  function shelfItems(part) { return (PARTS[part] || []).map(function (id) { return byId[id]; }).filter(Boolean); }
+  // o — третий элемент полки в SECTIONS: { skip: [id…] } убирает товары группы, { only: [id…] } оставляет только эти
+  function shelfItems(part, o) {
+    return (PARTS[part] || []).map(function (id) { return byId[id]; }).filter(function (p) {
+      return p && (!o || ((!o.skip || o.skip.indexOf(p.id) === -1) && (!o.only || o.only.indexOf(p.id) !== -1)));
+    });
+  }
+  // плашка идущей акции (mark в PROMOS) вместо −N% на всех товарах её страницы; снимается сама, когда акция кончилась
+  function promoMark(p) {
+    var today = isoDate(new Date()), found = '';
+    PROMOS.some(function (a) {
+      var s = a.mark && a.from <= today && a.to >= today && SECTIONS[a.page];
+      if (s && s.shelves.some(function (sh) { return shelfItems(sh[1], sh[2]).indexOf(p) !== -1; })) found = a.mark;
+      return !!found;
+    });
+    return found;
+  }
   function eNote() {
     return '<div class="note">' + icon('i-mail') + '<span>' + (TILDA
       ? 'Если вы заказываете только сборники или видеоуроки, выбирайте способ доставки «Заказ электронных сборников»: ссылки придут на почту.'
@@ -502,7 +519,7 @@
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
   var PROMOS = [
-    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', text: 'Пора обновить уход: серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
+    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 60%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
@@ -685,10 +702,7 @@
   /* ---------- Разделы каталога: полки как на страницах Tilda, по 3 товара в ряд ---------- */
   function sectionView(key) {
     var s = SECTIONS[key];
-    var shelves = s.shelves.map(function (sh) {
-      var skip = (sh[2] && sh[2].skip) || [];
-      return { title: sh[0], id: sh[1], list: shelfItems(sh[1]).filter(function (p) { return skip.indexOf(p.id) === -1; }) };
-    }).filter(function (sh) { return sh.list.length; });
+    var shelves = s.shelves.map(function (sh) { return { title: sh[0], id: sh[1], list: shelfItems(sh[1], sh[2]) }; }).filter(function (sh) { return sh.list.length; });
     var jump = shelves.length > 1 ? '<div class="cat-tabs" aria-label="Разделы страницы">' + shelves.map(function (sh) {
       return '<button type="button" class="chip" data-action="jump" data-target="shelf-' + sh.id + '">' + esc(sh.title) + ' <span class="count">' + sh.list.length + '</span></button>';
     }).join('') + '</div>' : '';
