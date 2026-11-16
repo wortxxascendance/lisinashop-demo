@@ -1979,7 +1979,10 @@
      на части новых iPhone событие не доходило, и поиск закрывался, а страница оставалась прежней */
   var handledHash = location.hash;
   function setHash(target, replace) {
-    try { history[replace ? 'replaceState' : 'pushState'](null, '', target); }
+    // Метки из ссылки (?ysclid=… от Яндекса, utm_…) при переходе по сайту убираем из адреса: 16.11 на новых iPhone по ссылке
+    // с ?ysclid=… акции и страницы не открывались, а без метки открывались. Метрика читает метки раньше, при загрузке
+    var url = location.search ? location.pathname + target : target;
+    try { history[replace ? 'replaceState' : 'pushState'](null, '', url); }
     catch (x) { dbg('history: ' + x.message); if (replace) location.replace(target); else location.hash = target.slice(1); return; }
     handledHash = location.hash;
     dbg((replace ? 'replace ' : 'push ') + target);
