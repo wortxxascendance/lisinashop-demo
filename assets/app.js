@@ -233,8 +233,11 @@
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
+  // зачёркнутая старая цена; у товаров идущей акции с плашкой (mark в PROMOS) её не показываем — только цену сейчас
+  function oldPrice(p) { return p.old > 0 && !promoMark(p) ? p.old : 0; }
   function priceHTML(p) {
-    return '<div class="price"><b>' + (p.opts ? 'от ' : '') + money(minPrice(p)) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s>' : '') + '</div>';
+    var old = oldPrice(p);
+    return '<div class="price"><b>' + (p.opts ? 'от ' : '') + money(minPrice(p)) + '</b>' + (old ? '<s>' + money(old) + '</s>' : '') + '</div>';
   }
   function stepper(key, q, light) {
     return '<div class="stepper' + (light ? ' stepper--light' : '') + '"><button type="button" data-action="dec" data-key="' + key + '" aria-label="Уменьшить количество">' + icon('i-minus') + '</button><span aria-live="polite">' + q + '</span><button type="button" data-action="inc" data-key="' + key + '" aria-label="Увеличить количество">' + icon('i-plus') + '</button></div>';
@@ -628,7 +631,7 @@
     return '<article class="promo ' + cls + '"><div class="promo__text">' +
       '<span class="promo__limit">' + icon('i-gift') + ' ' + (badge || 'Всего 100 наборов') + '</span>' +
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
-      '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
+      '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (oldPrice(p) ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn--sm" data-action="add" data-id="' + p.id + '">В корзину</button><a class="btn btn--sm btn--ghost" href="' + U.product(p.id) + '">Подробнее</a></div></div>' +
       '</div><div class="promo__img promo__img--pack">' + imgTag(src || img(p, 0), p.title) + '</div></article>';
   }
@@ -974,7 +977,7 @@
     return '<button type="button" class="' + (i === pdpOpt ? 'is-active' : '') + (out ? ' is-out' : '') + '" data-action="opt" data-i="' + i + '"' + (out ? ' title="Нет в наличии"' : '') + '>' + esc(optLabel(p, i)) + '</button>';
   }
   function pdpPrice(p, opt) {
-    return '<b>' + money(optPrice(p, opt)) + '</b>' + (p.old > 0 ? '<s>' + money(p.old) + '</s><span class="mark mark--sale">Экономия ' + money(p.old - p.price) + '</span>' : '');
+    return '<b>' + money(optPrice(p, opt)) + '</b>' + (oldPrice(p) ? '<s>' + money(p.old) + '</s><span class="mark mark--sale">Экономия ' + money(p.old - p.price) + '</span>' : '');
   }
   function buyBlock(p, opt) {
     var key = keyOf(p.id, opt);
