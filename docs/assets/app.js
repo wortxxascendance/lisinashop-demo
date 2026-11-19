@@ -522,11 +522,13 @@
   /* Акции на первом экране: прошедшие скрываются сами, текущая стоит первой, дальше по датам.
      Баннер (img): квадрат от 1200×1200 с ровным фоном. Чтобы фото сливалось с фоном слайда:
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
-     Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно. */
+     Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно.
+     item — слайд ведёт в карточку этого товара, а не в раздел page */
+  var MIST_SET = '169659347623'; // «Подарочный набор 5 ароматов - 5 настроений», заведён в Tilda 19.11, в снимке каталога его пока нет
   var PROMOS = [
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 50%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
     { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
-    { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
+    { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', item: MIST_SET, img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
   function isoDate(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function promoHero(withH1) {
@@ -540,15 +542,17 @@
         var src = a.img || (p ? img(p, 0) : '');
         var now = a.from && a.from <= today;
         var label = a.dates ? (now ? 'Акция сейчас' : 'Скоро') : a.badge;
+        // товара может ещё не быть в снимке каталога (новая позиция Tilda): адрес по номеру товара откроется, когда Tilda ответит
+        var href = a.item ? (byId[a.item] ? U.product(a.item) : link('pilulya_prof/tproduct/0-' + a.item)) : U.section(a.page);
         return '<article class="pslide" style="--bg:' + a.bg + ';--bgm:' + a.bgm + '">' +
           '<div class="pslide__text">' +
             '<p class="pslide__date"><b' + (now ? ' class="is-now"' : '') + '>' + label + '</b>' + (a.dates ? '<span>' + a.dates + '</span>' : '') + '</p>' +
             '<h2 class="pslide__title">' + esc(a.title) + '</h2>' +
             (a.sale ? '<p class="pslide__sale"><small>' + (a.saleLabel || 'Скидка') + '</small>' + a.sale + '</p>' : '') +
             '<p class="pslide__lead">' + esc(a.text) + '</p>' +
-            '<a class="btn" href="' + U.section(a.page) + '">Смотреть товары ' + icon('i-arrow') + '</a>' +
+            '<a class="btn" href="' + href + '">' + (a.item ? 'Смотреть набор ' : 'Смотреть товары ') + icon('i-arrow') + '</a>' +
           '</div>' +
-          '<a class="pslide__media" href="' + U.section(a.page) + '" tabindex="-1" aria-hidden="true">' +
+          '<a class="pslide__media" href="' + href + '" tabindex="-1" aria-hidden="true">' +
             (i === 0 ? '<img src="' + esc(asset(src)) + '" alt="" fetchpriority="high">' : imgTag(src, '')) +
           '</a></article>';
       }).join('') + '</div>' +
@@ -584,12 +588,14 @@
 
   /* Подарочные наборы на главной: в общем каталоге они теряются */
   function setsSection() {
-    var cards = promo(byId['542109948603'], 'promo--set promo--creams', 'Набор из&nbsp;3 парфюмированных кремов', 'Три аромата с&nbsp;феромонами: «Амазонка-59», «Карнавал-68» и&nbsp;«Бразильянка-62». Для рук и&nbsp;тела, по&nbsp;50&nbsp;мл.', '', 'Подарочный набор') +
+    var cards = promo(byId[MIST_SET], 'promo--set promo--mist', 'Набор «5&nbsp;ароматов&nbsp;— 5&nbsp;настроений»', 'Пять мистов для волос с&nbsp;гиалуроновой кислотой: «Каникулы в&nbsp;Дубае», «Острая интрига», «Любовные иллюзии», «Первая любовь» и&nbsp;«Запах любви».', '', 'Подарочный набор') +
+      promo(byId['542109948603'], 'promo--set promo--creams', 'Набор из&nbsp;3 парфюмированных кремов', 'Три аромата с&nbsp;феромонами: «Амазонка-59», «Карнавал-68» и&nbsp;«Бразильянка-62». Для рук и&nbsp;тела, по&nbsp;50&nbsp;мл.', '', 'Подарочный набор') +
       promo(byId['279717742663'], 'promo--set promo--cloud', 'Набор для волос Cloud of Love', 'Три средства с&nbsp;феромонами для комплексного ухода: мягкость, гладкость и&nbsp;блеск.', '', 'Подарочный набор');
     if (!cards) return '';
+    var n = cards.split('<article class="promo ').length - 1, mist = cards.indexOf('promo--mist') !== -1;
     return '<section class="section section--tight" data-sets="sets"><div class="wrap">' +
-      '<div class="section-head"><div><p class="eyebrow">Подарочные наборы</p><h2 class="h2">Кремы и&nbsp;Cloud of Love</h2></div><a class="link-arrow" href="' + U.section('pilulya') + '">Вся серия ' + icon('i-arrow') + '</a></div>' +
-      '<div class="promos">' + cards + '</div></div></section>';
+      '<div class="section-head"><div><p class="eyebrow">Подарочные наборы</p><h2 class="h2">' + (mist ? 'Мисты, кремы и&nbsp;Cloud of Love' : 'Кремы и&nbsp;Cloud of Love') + '</h2></div><a class="link-arrow" href="' + U.section('pilulya') + '">Вся серия ' + icon('i-arrow') + '</a></div>' +
+      '<div class="promos' + (n === 3 ? ' promos--3' : '') + '">' + cards + '</div></div></section>';
   }
 
   function kitSection() {
@@ -2182,6 +2188,8 @@
     if (JSON.stringify(parts) !== JSON.stringify(PARTS)) { PARTS = parts; added = true; }
     if (changed || added) { refreshStock(); refreshSets(); }
     if (added) refreshShelves();
+    // адрес нового товара открыли до ответа Tilda и получили «не найдено»: теперь товар известен, показываем его
+    if (added && renderedRoute && renderedRoute.name === 'notfound' && route().name !== 'notfound') { renderedKey = ''; render(false); }
   }
   // блоки наборов нарисованы из снимка каталога: закрытый или раскупленный набор убираем, цены ставим свежие
   function refreshSets() {

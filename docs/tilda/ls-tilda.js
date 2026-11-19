@@ -22,7 +22,7 @@
   fonts.href = 'https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Oranienbaum&display=swap';
   d.head.appendChild(fonts);
 
-  var SCRIPTS = ["https://wortxxascendance.github.io/lisinashop-demo/data/products.js?v=dc61851f","https://wortxxascendance.github.io/lisinashop-demo/data/pages.js?v=b6381fee","https://wortxxascendance.github.io/lisinashop-demo/assets/app.js?v=7b518758"];
+  var SCRIPTS = ["https://wortxxascendance.github.io/lisinashop-demo/data/products.js?v=dc61851f","https://wortxxascendance.github.io/lisinashop-demo/data/pages.js?v=b6381fee","https://wortxxascendance.github.io/lisinashop-demo/assets/app.js?v=3f07f32b"];
   function loadScripts(i) {
     if (i >= SCRIPTS.length) return;
     var s = d.createElement('script');
@@ -41,7 +41,7 @@
   // сначала стили, потом разметка: так страница не мигнёт без оформления
   var link = d.createElement('link');
   link.rel = 'stylesheet';
-  link.href = "https://wortxxascendance.github.io/lisinashop-demo/assets/styles.css?v=b1177916";
+  link.href = "https://wortxxascendance.github.io/lisinashop-demo/assets/styles.css?v=e95d38c4";
   var started = false;
   function start() { if (started) return; started = true; if (d.body) mount(); else d.addEventListener('DOMContentLoaded', mount); }
   link.onload = start;

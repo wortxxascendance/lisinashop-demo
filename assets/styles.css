@@ -1005,6 +1005,8 @@ html.lenis, html.lenis body { height: auto; }
 .promo--set .h3 { font-size: clamp(24px, 2.1vw, 30px); }
 .promo--creams { background: #f9f9fb; }
 .promo--cloud { background: #f4f4f4; }
+.promo--mist { background: #e8e8ea; } /* цвет фона фото набора мистов: фото без наложения, иначе серый фон темнеет квадратом */
+.promo--mist .promo__img--pack img { mix-blend-mode: normal; }
 .promo--set .promo__img { display: flex; align-items: center; }
 .promo--set .promo__img img { position: static; width: 100%; height: auto; aspect-ratio: 1 / 1; padding: 0; object-fit: cover; mix-blend-mode: normal; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent), linear-gradient(0deg, transparent, #000 6%, #000 94%, transparent); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent), linear-gradient(0deg, transparent, #000 6%, #000 94%, transparent); mask-composite: intersect; }
 @media (max-width: 640px) { .promo--set { grid-template-columns: 1fr; } }
