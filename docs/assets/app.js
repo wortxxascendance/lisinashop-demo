@@ -40,7 +40,10 @@
     /* Страница акции «Рапунцель» (16–22 ноября): филлер, серии Cloud of Love и для роста волос, без подарочного набора.
        Запись после «Уход дома», чтобы новые товары этих групп попадали в «Уход дома». skip/only — см. shelfItems */
     rapunzel: { title: 'Хочешь волосы как у Рапунцель?', lead: 'Акция 16–22 ноября. Филлер, серия Cloud of Love и серия для роста волос PILULYA по специальным ценам.', nav: 'akzia',
-      shelves: [['Серия Cloud of Love', '724367431762', { skip: ['279717742663'], add: ['595861466273'] }],['Серия для роста волос и постковид', '451135886322']] }
+      shelves: [['Серия Cloud of Love', '724367431762', { skip: ['279717742663'], add: ['595861466273'] }],['Серия для роста волос и постковид', '451135886322']] },
+    /* Страница акции «Мамины руки» (22–30 ноября): все кремы для рук и тела и все мисты с наборами, как в группах Tilda */
+    mama: { title: 'Мамины руки заботились о тебе. Теперь твоя очередь', lead: 'Акция 22–30 ноября. Парфюмированные кремы для рук и тела, гиалуроновые мисты и подарочные наборы PILULYA по специальным ценам.', nav: 'akzia',
+      shelves: [['Кремы для рук и тела', '897377975092'], ['Гиалуроновые мисты', '137248273552']] }
   };
   var MAIN = { prof: 'pilulya_prof', home: 'pilulya', badi: 'badi', rezept: 'rezept' };
   var INFO = { payment: 'delivery', oferta: 'oferta', politika: 'politika', 'politika-konfidenczialnosti': 'politika-konfidenczialnosti', garant: 'garant' };
@@ -113,10 +116,18 @@
   function isDigital(p) { return p.cat === 'rezept'; }
   function minPrice(p) { return p.opts ? Math.min.apply(null, p.opts.values.map(function (v) { return v.price; })) : p.price; }
   function optPrice(p, opt) { return p.opts && p.opts.values[opt] ? p.opts.values[opt].price : p.price; }
+  /* Кремы «Назначение…» заведены в Tilda с вариантом «Вес: 100 / 350», а это банки 150 и 350 мл (поправка 22.11).
+     Меняется только подпись на сайте: в корзину Tilda вариант уходит как записан в Tilda. Когда там вариант
+     переименуют в «Объем» и поставят 150, правило перестанет срабатывать само */
+  var CREAM_PART = '897377975092', CREAM_ML = { '100': '150' };
+  function creamMl(p) { return !!p.opts && /^\s*вес\s*$/i.test(p.opts.title) && (PARTS[CREAM_PART] || []).indexOf(p.id) !== -1; }
+  function optName(p) { return creamMl(p) ? 'Объём' : p.opts.title; }
   function optLabel(p, opt) {
     if (!p.opts || !p.opts.values[opt]) return '';
+    var label = String(p.opts.values[opt].label);
+    if (creamMl(p)) return (CREAM_ML[label] || label) + ' мл';
     var unit = /вес/i.test(p.opts.title) ? ' г' : /объ/i.test(p.opts.title) ? ' мл' : '';
-    return p.opts.values[opt].label + unit;
+    return label + unit;
   }
   /* Объём или вес для карточки: варианты товара, иначе поле «Характеристики» из Tilda */
   function volOf(p) {
@@ -527,7 +538,7 @@
   var MIST_SET = '169659347623'; // «Подарочный набор 5 ароматов - 5 настроений», заведён в Tilda 19.11, в снимке каталога его пока нет
   var PROMOS = [
     { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 50%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
-    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'pilulya', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
+    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'mama', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', item: MIST_SET, img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
   function isoDate(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -941,7 +952,7 @@
           '<div style="display:grid;gap:12px"><nav class="crumbs" aria-label="Навигация"><a href="' + U.home() + '">Главная</a>' + icon('i-chevron') + '<a href="' + U.section(sec) + '">' + SECTIONS[sec].title + '</a></nav><h1 class="pdp__title">' + esc(p.title) + '</h1></div>' +
           '<div class="pdp__price" data-pdp-price>' + pdpPrice(p, pdpOpt) + '</div>' +
           (p.short && p.cat !== 'badi' ? '<p class="pdp__short">' + esc(p.short) + '</p>' : '') +
-          (p.opts ? '<div class="opts"><span class="opts__label">' + esc(p.opts.title) + '</span><div class="opts__list">' + p.opts.values.map(function (v, i) {
+          (p.opts ? '<div class="opts"><span class="opts__label">' + esc(optName(p)) + '</span><div class="opts__list">' + p.opts.values.map(function (v, i) {
             return optBtn(p, i);
           }).join('') + '</div></div>' : '') +
           buyBlock(p, pdpOpt) +
@@ -1013,7 +1024,7 @@
       var p = byId[l.id], key = keyOf(l.id, l.opt);
       return '<div class="line"><a class="line__img" href="' + U.product(p.id) + '" data-action="close">' + imgTag(img(p, optImg(p, l.opt)), '') + '</a><div class="line__body">' +
         '<a class="line__title" href="' + U.product(p.id) + '" data-action="close">' + esc(p.title) + '</a>' +
-        (p.opts ? '<span class="line__opt">' + esc(p.opts.title) + ': ' + esc(optLabel(p, l.opt)) + '</span>' : isDigital(p) ? '<span class="line__opt">Электронный формат</span>' : '') +
+        (p.opts ? '<span class="line__opt">' + esc(optName(p)) + ': ' + esc(optLabel(p, l.opt)) + '</span>' : isDigital(p) ? '<span class="line__opt">Электронный формат</span>' : '') +
         '<div class="line__row">' + stepper(key, l.qty, true) +
         '<b>' + money(optPrice(p, l.opt) * l.qty) + '</b><button type="button" class="line__del" data-action="del" data-key="' + key + '" aria-label="Удалить из корзины">' + icon('i-trash') + '</button></div>' +
         '</div></div>';
