@@ -8,7 +8,11 @@
   var PAGES = window.LS_PAGES || {};
   var byId = {};
   var bySlug = {};
-  PRODUCTS.forEach(function (p) { byId[p.id] = p; bySlug[p.slug] = p; });
+  /* Цены, заданные на сайте поверх Tilda (её API отдаёт свою цену при каждом открытии): эта цена видна на сайте и уходит в корзину.
+     24.11.2026: филлер PILULYA MOLECULAR LIPID — 1 499 ₽ без старой цены (в Tilda стоит 1 490 ₽, там поправить вручную). */
+  var PRICE_FIX = { '595861466273': 1499 };
+  function fixPrice(p) { if (PRICE_FIX[p.id]) { p.price = PRICE_FIX[p.id]; p.old = 0; } }
+  PRODUCTS.forEach(function (p) { fixPrice(p); byId[p.id] = p; bySlug[p.slug] = p; });
 
   var FREE_SHIP = 4500;
   var app = document.getElementById('app');
@@ -2112,6 +2116,7 @@
     var volBefore = volOf(p);
     p.price = tildaNum(x.price);
     p.old = tildaNum(x.priceold);
+    fixPrice(p);
     p.qty = tildaStock(String(x.quantity == null ? '' : x.quantity).trim() !== '' ? x.quantity : ed0.quantity);
     p.mark = x.mark || '';
     p.opts = tildaOpts(x);
