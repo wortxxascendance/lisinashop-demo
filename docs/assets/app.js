@@ -244,8 +244,8 @@
     if (isDigital(p)) out += '<span class="mark mark--soft">PDF</span>';
     return out ? '<div class="card__marks">' + out + '</div>' : '';
   }
-  // зачёркнутая старая цена; у товаров идущей акции с плашкой (mark в PROMOS) её не показываем — только цену сейчас
-  function oldPrice(p) { return p.old > 0 && !promoMark(p) ? p.old : 0; }
+  // зачёркнутая старая цена; у товаров страницы идущей акции с плашкой (mark в PROMOS) её не показываем — только цену сейчас
+  function oldPrice(p) { return p.old > 0 && !onPromoPage(p) ? p.old : 0; }
   function priceHTML(p) {
     var old = oldPrice(p);
     return '<div class="price"><b>' + (p.opts ? 'от ' : '') + money(minPrice(p)) + '</b>' + (old ? '<s>' + money(old) + '</s>' : '') + '</div>';
@@ -508,15 +508,25 @@
       return p && (!o || ((!o.skip || o.skip.indexOf(p.id) === -1) && (!o.only || o.only.indexOf(p.id) !== -1)));
     });
   }
-  // плашка идущей акции (mark в PROMOS) вместо −N% на всех товарах её страницы; снимается сама, когда акция кончилась
-  function promoMark(p) {
-    var today = isoDate(new Date()), found = '';
+  // плашка идущей акции (mark в PROMOS) вместо −N%: на всех товарах её страницы и, с 24.11.2026, на всех товарах со скидкой
+  // (старая цена), кроме тех, у кого своя плашка вида «−62%». Снимается сама, когда акция кончилась
+  function activePromo(p) {
+    var today = isoDate(new Date()), found = null;
     PROMOS.some(function (a) {
-      var s = a.mark && a.from <= today && a.to >= today && SECTIONS[a.page];
-      if (s && s.shelves.some(function (sh) { return shelfItems(sh[1], sh[2]).indexOf(p) !== -1; })) found = a.mark;
+      if (a.mark && a.from <= today && a.to >= today && (!a.markSkip || a.markSkip.indexOf(p.id) === -1)) found = a;
       return !!found;
     });
     return found;
+  }
+  // товар стоит на странице идущей акции с плашкой
+  function onPromoPage(p) {
+    var a = activePromo(p), s = a && SECTIONS[a.page];
+    return !!(s && s.shelves.some(function (sh) { return shelfItems(sh[1], sh[2]).indexOf(p) !== -1; }));
+  }
+  function promoMark(p) {
+    var a = activePromo(p);
+    if (!a) return '';
+    return onPromoPage(p) || (p.old > 0 && !/^-/.test(p.mark || '')) ? a.mark : '';
   }
   function eNote() {
     return '<div class="note">' + icon('i-mail') + '<span>' + (TILDA
@@ -534,11 +544,11 @@
      Баннер (img): квадрат от 1200×1200 с ровным фоном. Чтобы фото сливалось с фоном слайда:
      bg — цвета левого края фото сверху вниз (ПК), bgm — цвет его нижнего края (телефон).
      Пока баннера нет, показывается фото товара (product). sale — скидка, её выделяем крупно.
-     item — слайд ведёт в карточку этого товара, а не в раздел page */
+     item — слайд ведёт в карточку этого товара, а не в раздел page. markSkip — товары страницы акции без плашки mark */
   var MIST_SET = '169659347623'; // «Подарочный набор 5 ароматов - 5 настроений», заведён в Tilda 19.11, в снимке каталога его пока нет
   var PROMOS = [
-    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 50%', mark: 'Чёрная пятница до −50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
-    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'mama', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
+    { from: '2026-11-16', to: '2026-11-22', dates: '16–22 ноября', title: 'Хочешь волосы как у Рапунцель?', sale: 'до 50%', mark: 'Чёрная пятница: скидки до 50%', text: 'Пора обновить уход: филлер, серия Cloud of Love и серия для роста волос', page: 'rapunzel', img: 'assets/img/promo/rapunzel.webp', bg: 'linear-gradient(180deg, #cecdd4, #cfced5, #d0cfd6, #cccbd2, #c4c2cb)', bgm: '#cfced5' },
+    { from: '2026-11-22', to: '2026-11-30', dates: '22–30 ноября', title: 'Мамины руки заботились о тебе. Теперь твоя очередь', sale: 'до 50%', mark: 'Чёрная пятница: скидки до 50%', markSkip: [MIST_SET], text: 'на наборы, кремы и мисты: подари маме заботу о коже и волосах', page: 'mama', img: 'assets/img/promo/mama.webp', bg: 'linear-gradient(180deg, #f6f3f9, #f5f1f9, #f5f1f9, #f5f2f9, #f8f5fb)', bgm: '#eeeaf2' },
     { badge: 'Набор', title: 'Пять поводов услышать: «Как же вкусно ты пахнешь!»', text: 'Набор из пяти мистов: пять ароматов, чтобы выбирать настроение каждый день', page: 'pilulya', item: MIST_SET, img: 'assets/img/promo/misty.webp', bg: 'linear-gradient(180deg, #f9dce5, #fadbe5, #fadce7, #f3c8d4, #f2c9d4)', bgm: '#e9bcc9' }
   ];
   function isoDate(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -650,7 +660,8 @@
       '<h3 class="h3">' + title + '</h3><p>' + text + '</p>' +
       '<div class="promo__foot"><div class="price"><b style="font-size:24px">' + money(p.price) + '</b>' + (oldPrice(p) ? '<s>' + money(p.old) + '</s>' : '') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn--sm" data-action="add" data-id="' + p.id + '">В корзину</button><a class="btn btn--sm btn--ghost" href="' + U.product(p.id) + '">Подробнее</a></div></div>' +
-      '</div><div class="promo__img promo__img--pack">' + imgTag(src || img(p, 0), p.title) + '</div></article>';
+      '</div><div class="promo__img promo__img--pack">' + imgTag(src || img(p, 0), p.title) +
+      (promoMark(p) ? '<span class="mark mark--sale mark--event promo__mark">' + esc(promoMark(p)) + '</span>' : '') + '</div></article>';
   }
 
   function noveltySection() {
