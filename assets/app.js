@@ -1992,6 +1992,11 @@
       app.classList.add('view-enter');
     }, 200);
   }
+  /* Адрес меняем родными pushState/replaceState из History.prototype. Пиксель Facebook на странице Tilda (fbevents.js)
+     подменяет history.pushState своей обёрткой, и тогда смену адреса Safari 26 считает действием скрипта-трекера:
+     27.11 на iPhone по ссылке с хвостом в адресе баннеры и разделы снова открывали главную */
+  var HP = window.History && History.prototype;
+  function histCall(kind, url) { (HP && HP[kind] ? HP[kind] : history[kind]).call(history, null, '', url); }
   /* Окно товара открывается и закрывается без перерисовки страницы под ним */
   var productDepth = 0, navPushed = false;
   function onRouteChange() {
@@ -2007,18 +2012,26 @@
     if (productDepth > 0) { var n = productDepth; productDepth = 0; history.go(-n); return; }
     var url = urlFor(renderedRoute || { name: 'home' });
     if (HASH) { setHash(url.charAt(0) === '#' ? url : '#/', true); return; }
-    history.replaceState(null, '', url);
+    histCall('replaceState', url);
     onRouteChange();
   }
   /* Адрес #/… меняем сами и сразу перерисовываем страницу, не дожидаясь hashchange:
      на части новых iPhone событие не доходило, и поиск закрывался, а страница оставалась прежней */
   var handledHash = location.hash;
+  function sameHash(a, b) { try { return decodeURIComponent(a) === decodeURIComponent(b); } catch (x) { return a === b; } }
   function setHash(target, replace) {
     // Метки из ссылки (?ysclid=… от Яндекса, utm_…) при переходе по сайту убираем из адреса: 16.11 на новых iPhone по ссылке
     // с ?ysclid=… акции и страницы не открывались, а без метки открывались. Метрика читает метки раньше, при загрузке
     var url = location.search ? location.pathname + target : target;
-    try { history[replace ? 'replaceState' : 'pushState'](null, '', url); }
-    catch (x) { dbg('history: ' + x.message); if (replace) location.replace(target); else location.hash = target.slice(1); return; }
+    var pushed = false;
+    try { histCall(replace ? 'replaceState' : 'pushState', url); pushed = true; }
+    catch (x) { dbg('history: ' + x.message); }
+    // Safari 26 (защита от отслеживания) может срезать #… из адреса, если смену адреса провёл чужой скрипт.
+    // Тогда переходим через location: запись в истории уже есть — заменяем её, иначе добавляем
+    if (!sameHash(location.hash, target)) {
+      dbg('адрес не сменился (' + location.href + '), через location');
+      if (replace || pushed) location.replace(target); else location.hash = target.slice(1);
+    }
     handledHash = location.hash;
     dbg((replace ? 'replace ' : 'push ') + target);
     onRouteChange();
@@ -2042,7 +2055,7 @@
     }
     var u = new URL(url, location.href);
     if (u.pathname === location.pathname && u.search === location.search) { if (!productOpen) scrollTop(); return; }
-    history.pushState(null, '', u.pathname + u.search);
+    histCall('pushState', u.pathname + u.search);
     navPushed = true;
     onRouteChange();
   }
