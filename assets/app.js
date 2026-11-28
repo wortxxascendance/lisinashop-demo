@@ -88,27 +88,68 @@
     if (dq) sessionStorage.setItem('ls_debug', dq[1]);
     DEBUG = sessionStorage.getItem('ls_debug') === '1';
   } catch (e) { DEBUG = /[?&]lsdebug=1/.test(location.search); }
+  /* Журнал переходов пишется всегда: последние 120 событий во вкладке (sessionStorage, никуда не отправляется) переживают
+     перезагрузку. Сбой на телефоне: в той же вкладке открыть lisinashop.ru/?lsdebug=1 — журнал вместе с прошлыми событиями на экране */
+  var JKEY = 'ls_journal', journal = [];
+  try { journal = JSON.parse(sessionStorage.getItem(JKEY) || '[]'); if (!Array.isArray(journal)) journal = []; } catch (e) { journal = []; }
   var dbgBox = null;
-  function dbg(msg) {
-    if (!DEBUG) return;
+  function dbgShow() {
+    if (!DEBUG || !document.body) return;
     if (!dbgBox) {
       dbgBox = document.createElement('pre');
-      dbgBox.style.cssText = 'position:fixed;left:4px;right:4px;bottom:4px;z-index:2147483647;max-height:38vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.82);color:#9f9;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;border-radius:8px;pointer-events:none';
+      dbgBox.style.cssText = 'position:fixed;left:4px;right:4px;bottom:4px;z-index:2147483647;max-height:45vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.86);color:#9f9;font:10px/1.35 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;border-radius:8px;-webkit-overflow-scrolling:touch';
       document.body.appendChild(dbgBox);
     }
-    var t = new Date();
-    dbgBox.textContent = (dbgBox.textContent + '\n' + t.toTimeString().slice(0, 8) + '.' + ('00' + t.getMilliseconds()).slice(-3) + ' ' + msg).split('\n').slice(-40).join('\n').replace(/^\n/, '');
+    dbgBox.textContent = journal.join('\n');
     dbgBox.scrollTop = dbgBox.scrollHeight;
   }
-  if (DEBUG) {
-    window.addEventListener('error', function (e) { dbg('ERROR ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno); });
-    window.addEventListener('unhandledrejection', function (e) { dbg('REJECT ' + (e.reason && e.reason.message || e.reason)); });
-    document.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('a[href], [data-action]');
-      dbg('click ' + (a ? (a.getAttribute('href') || '[' + a.getAttribute('data-action') + ']') : e.target.tagName) + (e.defaultPrevented ? ' (prevented)' : ''));
-    }, true);
-    dbg(navigator.userAgent.replace(/^Mozilla\/5\.0 /, '') + ' ' + innerWidth + 'x' + innerHeight + ' hash=' + location.hash);
+  function dbg(msg) {
+    var t = new Date();
+    journal.push(t.toTimeString().slice(0, 8) + '.' + ('00' + t.getMilliseconds()).slice(-3) + ' ' + String(msg).slice(0, 300));
+    if (journal.length > 120) journal = journal.slice(-120);
+    try { sessionStorage.setItem(JKEY, JSON.stringify(journal)); } catch (e) {}
+    dbgShow();
   }
+  // какой чужой скрипт вызвал смену адреса: первый адрес в стеке, кроме app.js
+  function callerScript() {
+    var s = String(new Error().stack || '').split('\n');
+    for (var i = 0; i < s.length; i++) {
+      var m = s[i].match(/(https?:\/\/[^\s()]+?):\d+:\d+/);
+      if (m && m[1].indexOf('/assets/app.js') === -1) return m[1].replace(/^https?:\/\//, '').replace(/\?.*$/, '').slice(-70);
+    }
+    return '?';
+  }
+  window.addEventListener('error', function (e) { dbg('ERROR ' + e.message + ' @' + String(e.filename || '').split('/').pop().split('?')[0] + ':' + e.lineno); });
+  window.addEventListener('unhandledrejection', function (e) { dbg('REJECT ' + (e.reason && e.reason.message || e.reason)); });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) dbg('pageshow из кэша ' + location.href); });
+  window.addEventListener('pagehide', function () { dbg('pagehide ' + location.href); });
+  window.addEventListener('hashchange', function (e) { dbg('hashchange ' + String(e.oldURL || '').replace(/^[^#]*/, '') + ' → ' + location.hash); }, true);
+  window.addEventListener('popstate', function () { dbg('popstate ' + location.hash); }, true);
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href], [data-action]');
+    dbg('click ' + (a ? (a.getAttribute('href') || '[' + a.getAttribute('data-action') + ']') : e.target.tagName) + (e.defaultPrevented ? ' (prevented)' : ''));
+  }, true);
+  dbg('load ' + location.href + ' ref=' + String(document.referrer || '-').slice(0, 60) + ' | ' + navigator.userAgent.replace(/^Mozilla\/5\.0 /, '').slice(0, 120) + ' ' + innerWidth + 'x' + innerHeight);
+  /* Родные pushState/replaceState: сайт меняет адрес ими в обход обёрток (пиксель Facebook на странице Tilda подменяет
+     history.pushState). Вызовы чужих скриптов пишем в журнал с именем скрипта */
+  var NATIVE_HIST = {}, ownHist = false;
+  ['pushState', 'replaceState'].forEach(function (k) {
+    var HPr = window.History && History.prototype;
+    if (!HPr || typeof HPr[k] !== 'function') return;
+    var orig = NATIVE_HIST[k] = HPr[k];
+    function logged(target, base) {
+      return function (s, t, u) {
+        var r = base.apply(target === 'proto' ? this : history, arguments);
+        try { dbg(k + ' ' + u + ' → ' + location.hash + ' [' + (ownHist ? 'сайт' : callerScript()) + ']'); } catch (e) {}
+        return r;
+      };
+    }
+    try {
+      HPr[k] = logged('proto', orig);
+      // обёртка, поставленная раньше нас прямо на history (fbevents.js), зовёт родной метод мимо прототипа: оборачиваем и её
+      if (Object.prototype.hasOwnProperty.call(history, k)) history[k] = logged('own', history[k]);
+    } catch (e) {}
+  });
 
   function money(n) { return Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ₽'; }
   function norm(s) { return String(s || '').toLowerCase().replace(/ё/g, 'е'); }
@@ -221,7 +262,7 @@
   /* ---------- Значки в шапке ---------- */
   function bump(el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
   function updateBadges(bumpCart, bumpFav) {
-    var c = cartCount() || (TILDA ? tildaCount() : 0);
+    var c = cartCount() + (TILDA ? tildaCount() : 0); // вместе с товарами, уже перенесёнными в корзину Tilda
     $all('[data-cart-count]').forEach(function (b) { b.textContent = c; b.hidden = !c; if (bumpCart) bump(b); });
     $all('[data-cart-sum]').forEach(function (b) { b.textContent = cartCount() ? money(cartTotal()) : ''; });
     $all('[data-fav-count]').forEach(function (b) { b.textContent = favs.length; b.hidden = !favs.length; if (bumpFav) bump(b); });
@@ -425,8 +466,8 @@
   var renderedKey = '';
   var renderedRoute = null;
   var productOpen = false;
-  function render(resetScroll) {
-    var r = route();
+  function render(resetScroll, rr) {
+    var r = rr || route();
     closeAll(true);
     if (r.name === 'product') {
       if (!renderedKey) { renderBase(baseOf(r)); if (resetScroll) scrollTop(); }
@@ -1050,6 +1091,7 @@
       (ups.length ? '<div class="cart__upsell"><h4>Добавьте к заказу</h4><div style="display:grid;gap:10px">' + ups.map(function (p) {
         return '<div class="upsell">' + imgTag(img(p, 0), '') + '<div><div style="font-weight:500;line-height:1.3">' + esc(p.title) + '</div><span class="muted">' + money(minPrice(p)) + '</span></div><button type="button" class="add" data-action="add" data-id="' + p.id + '" aria-label="Добавить: ' + esc(p.title) + '">' + icon('i-plus') + '</button></div>';
       }).join('') + '</div></div>' : '') +
+      (TILDA && tildaCount() ? '<p class="muted" style="margin:0 0 10px;font-size:14px">Ещё ' + tildaCount() + ' ' + plural(tildaCount(), 'товар', 'товара', 'товаров') + ' уже в оформлении заказа — они останутся в заказе.</p>' : '') +
       '<div class="cart__foot"><div class="cart__total"><span>Итого</span><b>' + money(total) + '</b></div>' +
       (TILDA
         ? '<button type="button" class="btn btn--block" data-action="tilda-checkout">Оформить заказ ' + icon('i-arrow') + '</button>'
@@ -1133,14 +1175,21 @@
       if (!cart.length) { renderCart(); toast('Товаров из корзины больше нет в наличии', 'i-x'); return; }
     }
     try {
-      window.tcart.products = [];
-      if (typeof window.tcart__saveLocalObj === 'function') window.tcart__saveLocalObj();
+      /* Корзину Tilda не очищаем: 28.11 при повторном «Оформить заказ» товары, уже перенесённые туда раньше, пропадали из заказа.
+         Tilda сама складывает одинаковые товары, а сверх остатка показывает alert и товар не берёт — поэтому берём не больше остатка */
+      if (typeof window.tcart__syncProductsObject__LStoObj === 'function') window.tcart__syncProductsObject__LStoObj();
+      var cut = 0;
       cart.forEach(function (l) {
         var p = byId[l.id];
         var v = p.opts ? p.opts.values[l.opt] : null;
         var inv = stockOf(p, l.opt);
+        var uid = Number((v && v.uid) || p.id);
+        var inTilda = (window.tcart.products || []).reduce(function (s, x) { return s + (x && String(x.uid) === String(uid) ? Number(x.quantity) || 0 : 0); }, 0);
+        var qty = Math.min(l.qty, inv - inTilda);
+        if (qty < l.qty) cut++;
+        if (qty <= 0) return;
         // Как кнопка магазина Tilda: uid — вариант товара (по нему корзина проверяет остаток), gen_uid — сам товар
-        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: Math.min(l.qty, inv), uid: Number((v && v.uid) || p.id), gen_uid: Number(p.id), img: absUrl(img(p, optImg(p, l.opt))) };
+        var prod = { name: p.title, price: optPrice(p, l.opt), quantity: qty, uid: uid, gen_uid: Number(p.id), img: absUrl(img(p, optImg(p, l.opt))) };
         if (inv !== Infinity) prod.inv = inv;
         // lid (номер товара каталога) и упаковку кладёт в заказ и кнопка Tilda. 14.11 выяснилось, что купленные через нас
         // сборники не приходят на почту и в личный кабинет; lid у нас не было — добавлен, чтобы заказ не отличался от родного
@@ -1157,12 +1206,15 @@
         add(prod);
       });
       if (gone.length) toast('Убрали из заказа: нет в наличии (' + gone.length + ')', 'i-x');
+      else if (cut) toast('Часть товаров уже в заказе — добавили сколько есть в наличии', 'i-check');
+      dbg('в корзину Tilda: ' + cart.length + ' поз., теперь там ' + tildaCount() + ' шт.');
       cart = [];
       save('ls_cart', cart);
       closeAll(true);
       updateBadges();
       setTimeout(openTildaCart, 400);
     } catch (e) {
+      dbg('tildaCheckout: ' + e.message);
       toast('Не удалось открыть оформление. Обновите страницу', 'i-x');
     }
   }
@@ -1977,15 +2029,16 @@
 
   /* Переходы между страницами без перезагрузки */
   // ошибка отрисовки не должна оставлять страницу полупрозрачной (view-leave); в журнал ?lsdebug=1 она тоже попадает
-  function safeRender(resetScroll) {
-    try { render(resetScroll); }
+  function safeRender(resetScroll, r) {
+    try { render(resetScroll, r); }
     catch (err) { dbg('RENDER ' + err.message + ' ' + String(err.stack || '').split('\n').slice(0, 3).join(' | ')); setTimeout(function () { throw err; }); }
   }
-  function transitionTo() {
-    if (REDUCED) { safeRender(true); return; }
+  // страница выбрана в момент перехода: если за 200 мс анимации чужой скрипт сбросит адрес, всё равно откроется нужная
+  function transitionTo(r) {
+    if (REDUCED) { safeRender(true, r); return; }
     app.classList.add('view-leave');
     setTimeout(function () {
-      safeRender(true);
+      safeRender(true, r);
       app.classList.remove('view-leave');
       app.classList.remove('view-enter');
       void app.offsetWidth;
@@ -1995,8 +2048,10 @@
   /* Адрес меняем родными pushState/replaceState из History.prototype. Пиксель Facebook на странице Tilda (fbevents.js)
      подменяет history.pushState своей обёрткой, и тогда смену адреса Safari 26 считает действием скрипта-трекера:
      27.11 на iPhone по ссылке с хвостом в адресе баннеры и разделы снова открывали главную */
-  var HP = window.History && History.prototype;
-  function histCall(kind, url) { (HP && HP[kind] ? HP[kind] : history[kind]).call(history, null, '', url); }
+  function histCall(kind, url) {
+    ownHist = true;
+    try { (NATIVE_HIST[kind] || history[kind]).call(history, null, '', url); } finally { ownHist = false; }
+  }
   /* Окно товара открывается и закрывается без перерисовки страницы под ним */
   var productDepth = 0, navPushed = false;
   function onRouteChange() {
@@ -2006,7 +2061,7 @@
     navPushed = false;
     var swap = r.name === 'product' ? !!renderedKey : productOpen && routeKey(r) === renderedKey;
     dbg('route ' + routeKey(r) + (swap ? ' (окно)' : ''));
-    if (swap) safeRender(false); else transitionTo();
+    if (swap) safeRender(false, r); else transitionTo(r);
   }
   function closeProduct() {
     if (productDepth > 0) { var n = productDepth; productDepth = 0; history.go(-n); return; }
@@ -2033,12 +2088,22 @@
       if (replace || pushed) location.replace(target); else location.hash = target.slice(1);
     }
     handledHash = location.hash;
+    ownNavAt = Date.now();
     dbg((replace ? 'replace ' : 'push ') + target);
     onRouteChange();
   }
+  var ownNavAt = 0;
   function syncHash(e) {
     var h = location.hash;
     if (h === handledHash) return;
+    /* 27.11 на iPhone: после нажатия на баннер адрес #/… тут же стирался без событий назад/вперёд, и сайт уходил на главную.
+       Адрес сменился без hashchange/popstate (это не кнопка «назад») меньше чем через 2 с после нашего перехода и стал
+       пустым — значит, его стёр чужой скрипт: возвращаем наш адрес и страницу не меняем */
+    if (e.type === 'check' && (!h || h === '#') && handledHash.indexOf('#/') === 0 && Date.now() - ownNavAt < 2000) {
+      dbg('адрес стёрт без перехода (' + location.href + '), возвращаю ' + handledHash);
+      try { histCall('replaceState', location.pathname + location.search + handledHash); } catch (x) {}
+      if (location.hash === handledHash) return;
+    }
     // корзина Tilda сама ставит и стирает #tcart/#opencart через replaceState: пустой адрес после её якоря — не переход на главную
     if (e.type === 'check' && (!h || h === '#') && handledHash.indexOf('#/') !== 0) { handledHash = h; return; }
     handledHash = h;
